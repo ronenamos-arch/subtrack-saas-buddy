@@ -1,15 +1,27 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { IntegrationCard } from "@/components/integrations/IntegrationCard";
 import { Mail, FileText, Slack, Webhook, Zap, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useGmailIntegration } from "@/hooks/useGmailIntegration";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 const Integrations = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const {
+    gmailStatus,
+    isCheckingStatus,
+    connectGmail,
+    disconnectGmail,
+    scanEmails,
+    initiateGmailAuth,
+  } = useGmailIntegration();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -23,6 +35,16 @@ const Integrations = () => {
     checkAuth();
   }, [navigate]);
 
+  // Handle OAuth callback
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) {
+      connectGmail.mutate(code);
+      // Clean up URL
+      window.history.replaceState({}, '', '/integrations');
+    }
+  }, [searchParams]);
+
   const handleConnect = (name: string) => {
     toast({
       title: "בקרוב",
@@ -35,7 +57,21 @@ const Integrations = () => {
       title: "Gmail",
       description: "סרוק אוטומטית חשבוניות מתיבת הדואר שלך וזהה מנויים חדשים",
       icon: Mail,
-      status: "coming_soon" as const,
+      status: gmailStatus?.connected ? "connected" as const : "available" as const,
+      onConnect: () => {
+        if (gmailStatus?.connected) {
+          toast({
+            title: "Gmail כבר מחובר",
+            description: `חשבון: ${gmailStatus.email}`,
+          });
+        } else {
+          toast({
+            title: "הוראות חיבור Gmail",
+            description: "נא ליצור Google Cloud OAuth credentials ולהגדיר את GOOGLE_CLIENT_ID ו-GOOGLE_CLIENT_SECRET",
+          });
+          // initiateGmailAuth(); // Uncomment when credentials are configured
+        }
+      },
     },
     {
       title: "Slack",
@@ -81,6 +117,33 @@ const Integrations = () => {
           <h1 className="text-4xl font-bold">אינטגרציות</h1>
           <p className="text-muted-foreground">חבר את מערכת המנויים שלך לשירותים אחרים</p>
         </div>
+
+        {/* Gmail Integration Status */}
+        {!isCheckingStatus && gmailStatus?.connected && (
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Gmail מחובר</h3>
+                <p className="text-sm text-muted-foreground">{gmailStatus.email}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => scanEmails.mutate(365)}
+                  disabled={scanEmails.isPending}
+                >
+                  {scanEmails.isPending ? "סורק..." : "סרוק אימיילים"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => disconnectGmail.mutate()}
+                  disabled={disconnectGmail.isPending}
+                >
+                  נתק
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {integrations.map((integration) => (

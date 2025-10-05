@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_scan_rules: {
+        Row: {
+          created_at: string
+          enabled: boolean | null
+          id: string
+          sender_filter: string | null
+          subject_filter: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          sender_filter?: string | null
+          subject_filter?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          sender_filter?: string | null
+          subject_filter?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       gmail_tokens: {
         Row: {
           access_token: string
@@ -160,6 +190,72 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      subscription_suggestions: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          confidence_score: number | null
+          created_at: string
+          currency: string | null
+          duplicate_of: string | null
+          id: string
+          invoice_id: string | null
+          next_renewal_date: string
+          service_name: string
+          status: string | null
+          updated_at: string
+          user_id: string
+          vendor: string | null
+        }
+        Insert: {
+          amount: number
+          billing_cycle: string
+          confidence_score?: number | null
+          created_at?: string
+          currency?: string | null
+          duplicate_of?: string | null
+          id?: string
+          invoice_id?: string | null
+          next_renewal_date: string
+          service_name: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          vendor?: string | null
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          confidence_score?: number | null
+          created_at?: string
+          currency?: string | null
+          duplicate_of?: string | null
+          id?: string
+          invoice_id?: string | null
+          next_renewal_date?: string
+          service_name?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_suggestions_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_suggestions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {

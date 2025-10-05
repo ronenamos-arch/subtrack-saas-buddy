@@ -11,6 +11,7 @@ import Reports from "./pages/Reports";
 import Invoices from "./pages/Invoices";
 import InvoicesHistory from "./pages/InvoicesHistory";
 import Integrations from "./pages/Integrations";
+import SubscriptionSuggestions from "./pages/SubscriptionSuggestions";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/subscriptions/suggestions" element={<SubscriptionSuggestions />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/invoices/history" element={<InvoicesHistory />} />

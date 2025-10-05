@@ -2,3 +2,9 @@ project_id = "iucclykictjjuaabqvcv"
 
 [functions.parse-invoice]
 verify_jwt = true
+
+[functions.gmail-oauth]
+verify_jwt = true
+
+[functions.scan-gmail]
+verify_jwt = true

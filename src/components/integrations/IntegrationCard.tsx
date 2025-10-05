@@ -7,7 +7,7 @@ interface IntegrationCardProps {
   title: string;
   description: string;
   icon: LucideIcon;
-  status: "available" | "coming_soon" | "beta";
+  status: "available" | "coming_soon" | "beta" | "connected";
   onConnect?: () => void;
 }
 
@@ -16,12 +16,14 @@ export const IntegrationCard = ({ title, description, icon: Icon, status, onConn
     available: "זמין",
     coming_soon: "בקרוב",
     beta: "בטא",
+    connected: "מחובר",
   };
 
   const statusVariants = {
     available: "default",
     coming_soon: "secondary",
     beta: "outline",
+    connected: "default",
   } as const;
 
   return (
@@ -46,6 +48,11 @@ export const IntegrationCard = ({ title, description, icon: Icon, status, onConn
         {status === "available" && onConnect && (
           <Button onClick={onConnect} className="w-full">
             התחבר
+          </Button>
+        )}
+        {status === "connected" && onConnect && (
+          <Button variant="outline" onClick={onConnect} className="w-full">
+            נתק
           </Button>
         )}
         {status === "coming_soon" && (
