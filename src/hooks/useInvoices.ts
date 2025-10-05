@@ -53,16 +53,23 @@ export const useInvoices = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get signed URL for parsing (valid for 1 hour)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('invoices')
+        .createSignedUrl(fileName, 3600);
+
+      if (signedUrlError) throw signedUrlError;
+
+      // Get public URL for storage
       const { data: { publicUrl } } = supabase.storage
         .from('invoices')
         .getPublicUrl(fileName);
 
-      // Parse invoice with AI
+      // Parse invoice with AI using signed URL
       const { data: parseData, error: parseError } = await supabase.functions.invoke(
         'parse-invoice',
         {
-          body: { fileUrl: publicUrl, fileName: file.name }
+          body: { fileUrl: signedUrlData.signedUrl, fileName: file.name }
         }
       );
 
