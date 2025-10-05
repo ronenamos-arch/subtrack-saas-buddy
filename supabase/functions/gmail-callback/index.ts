@@ -16,12 +16,21 @@ Deno.serve(async (req) => {
     const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
 
+    console.log('Gmail callback received:', { 
+      url: url.href,
+      hasCode: !!code, 
+      hasState: !!state, 
+      hasError: !!error,
+      allParams: Object.fromEntries(url.searchParams)
+    });
+
     if (error) {
       console.error('OAuth error:', error);
       return Response.redirect(`${Deno.env.get('APP_URL') || 'https://preview--subtrack-saas-buddy.lovable.app'}/integrations?error=${error}`);
     }
 
     if (!code) {
+      console.error('No authorization code received. URL:', url.href);
       throw new Error('No authorization code received');
     }
 
