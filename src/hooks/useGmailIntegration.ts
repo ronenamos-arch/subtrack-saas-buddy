@@ -80,20 +80,30 @@ export const useGmailIntegration = () => {
     },
   });
 
-  const initiateGmailAuth = () => {
-    const clientId = "YOUR_GOOGLE_CLIENT_ID"; // User needs to configure this
-    const redirectUri = `${window.location.origin}/integrations`;
-    const scope = "https://www.googleapis.com/auth/gmail.readonly";
-    
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `response_type=code&` +
-      `scope=${encodeURIComponent(scope)}&` +
-      `access_type=offline&` +
-      `prompt=consent`;
+  const initiateGmailAuth = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-oauth", {
+        body: { action: "get-config" },
+      });
 
-    window.location.href = authUrl;
+      if (error) throw error;
+
+      const { clientId, redirectUri } = data;
+      const scope = "https://www.googleapis.com/auth/gmail.readonly";
+      
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `access_type=offline&` +
+        `prompt=consent`;
+
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error("Error initiating Gmail auth:", error);
+      toast.error("שגיאה בהפעלת אימות Gmail");
+    }
   };
 
   return {

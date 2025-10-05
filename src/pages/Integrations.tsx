@@ -65,11 +65,7 @@ const Integrations = () => {
             description: `חשבון: ${gmailStatus.email}`,
           });
         } else {
-          toast({
-            title: "הוראות חיבור Gmail",
-            description: "נא ליצור Google Cloud OAuth credentials ולהגדיר את GOOGLE_CLIENT_ID ו-GOOGLE_CLIENT_SECRET",
-          });
-          // initiateGmailAuth(); // Uncomment when credentials are configured
+          initiateGmailAuth();
         }
       },
     },

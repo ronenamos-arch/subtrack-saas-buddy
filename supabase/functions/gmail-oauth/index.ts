@@ -17,6 +17,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const { code, action } = await req.json();
+
+    // Return OAuth config for frontend (client ID is public, no auth needed)
+    if (action === 'get-config') {
+      return new Response(
+        JSON.stringify({
+          clientId: Deno.env.get('GOOGLE_CLIENT_ID'),
+          redirectUri: `https://preview--subtrack-saas-buddy.lovable.app/integrations`,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // All other actions require authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
@@ -29,8 +43,6 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { code, action } = await req.json();
-
     if (action === 'exchange') {
       // Exchange authorization code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -40,7 +52,7 @@ serve(async (req) => {
           code,
           client_id: Deno.env.get('GOOGLE_CLIENT_ID'),
           client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET'),
-          redirect_uri: Deno.env.get('GOOGLE_REDIRECT_URI'),
+          redirect_uri: `https://preview--subtrack-saas-buddy.lovable.app/integrations`,
           grant_type: 'authorization_code',
         }),
       });
