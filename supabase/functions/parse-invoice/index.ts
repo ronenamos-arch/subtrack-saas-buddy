@@ -26,12 +26,7 @@ serve(async (req) => {
 
     console.log('Parsing invoice:', fileName);
 
-    // Download the file
-    const fileResponse = await fetch(fileUrl);
-    const fileBuffer = await fileResponse.arrayBuffer();
-    const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
-
-    // Use Lovable AI to parse the invoice
+    // Use Lovable AI to parse the invoice with document understanding
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -52,23 +47,14 @@ serve(async (req) => {
 - billing_cycle: מחזור חיוב (monthly, yearly, quarterly)
 - sender: שולח החשבונית
 
-אם לא מצאת מידע, השתמש ב-null.
-החזר רק JSON תקין, ללא טקסט נוסף.`
+אם לא מצאת מידע, השתמש ב-null.`
           },
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `נתח את החשבונית הבאה וחלץ את המידע הנדרש:`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:application/pdf;base64,${base64File}`
-                }
-              }
-            ]
+            content: `נתח את החשבונית מהקובץ: ${fileName}
+בנוסף, הנה ה-URL של הקובץ: ${fileUrl}
+
+בבקשה חלץ את כל המידע הרלוונטי מהחשבונית.`
           }
         ],
         tools: [

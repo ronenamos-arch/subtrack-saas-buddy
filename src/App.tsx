@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Subscriptions from "./pages/Subscriptions";
 import Reports from "./pages/Reports";
 import Invoices from "./pages/Invoices";
+import InvoicesHistory from "./pages/InvoicesHistory";
 import Integrations from "./pages/Integrations";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/subscriptions" element={<Subscriptions />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/invoices" element={<Invoices />} />
+          <Route path="/invoices/history" element={<InvoicesHistory />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
