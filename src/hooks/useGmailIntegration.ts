@@ -66,12 +66,17 @@ export const useGmailIntegration = () => {
       });
 
       const authUrl = data.authUrl as string;
-      if (window.top) {
-        // Ensure top-level navigation (avoid Google OAuth 403 in iframes)
-        (window.top as Window).location.href = authUrl;
-      } else {
-        window.location.href = authUrl;
-      }
+      // Open in new window to avoid iframe security restrictions
+      const width = 600;
+      const height = 700;
+      const left = (window.screen.width - width) / 2;
+      const top = (window.screen.height - height) / 2;
+      
+      window.open(
+        authUrl,
+        'gmail-auth',
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      );
     } catch (error) {
       console.error("Error initiating Gmail auth:", error);
       toast.error("שגיאה בהפעלת אימות Gmail");

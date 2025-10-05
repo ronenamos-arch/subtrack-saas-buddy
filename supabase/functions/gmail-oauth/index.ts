@@ -67,6 +67,8 @@ serve(async (req) => {
 
     if (action === 'exchange') {
       // Exchange authorization code for tokens
+      const redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI') || 'https://iucclykictjjuaabqvcv.supabase.co/functions/v1/gmail-callback';
+      
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,7 +76,7 @@ serve(async (req) => {
           code,
           client_id: Deno.env.get('GOOGLE_CLIENT_ID'),
           client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET'),
-          redirect_uri: `https://preview--subtrack-saas-buddy.lovable.app/integrations`,
+          redirect_uri: redirectUri,
           grant_type: 'authorization_code',
         }),
       });
