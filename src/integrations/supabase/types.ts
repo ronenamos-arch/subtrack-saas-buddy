@@ -14,7 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          full_name: string | null
+          id: string
+          notification_days: number[] | null
+          organization_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          full_name?: string | null
+          id: string
+          notification_days?: number[] | null
+          organization_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          full_name?: string | null
+          id?: string
+          notification_days?: number[] | null
+          organization_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          billing_cycle: string
+          category_id: string | null
+          cost: number
+          created_at: string | null
+          currency: string | null
+          id: string
+          licenses_count: number | null
+          licenses_used: number | null
+          next_renewal_date: string
+          notes: string | null
+          service_name: string
+          start_date: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          billing_cycle: string
+          category_id?: string | null
+          cost: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          licenses_count?: number | null
+          licenses_used?: number | null
+          next_renewal_date: string
+          notes?: string | null
+          service_name: string
+          start_date: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          billing_cycle?: string
+          category_id?: string | null
+          cost?: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          licenses_count?: number | null
+          licenses_used?: number | null
+          next_renewal_date?: string
+          notes?: string | null
+          service_name?: string
+          start_date?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
