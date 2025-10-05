@@ -107,10 +107,10 @@ interface DashboardLayoutProps {
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full" dir="rtl">
+      <div className="min-h-screen flex w-full relative" dir="rtl">
         <AppSidebar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-6">
+        <main className="flex-1 overflow-y-auto relative z-10">
+          <div className="sticky top-0 z-20 flex h-14 items-center gap-4 border-b bg-background px-6">
             <SidebarTrigger />
             <div className="flex-1" />
           </div>
