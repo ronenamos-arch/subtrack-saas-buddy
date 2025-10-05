@@ -11,9 +11,9 @@ export const useGmailIntegration = () => {
       const { data, error } = await supabase
         .from("gmail_tokens")
         .select("email_address, created_at")
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       
       return data ? { connected: true, email: data.email_address } : { connected: false };
     },
