@@ -65,9 +65,13 @@ export const useGmailIntegration = () => {
         body: { action: "get-auth-url" },
       });
 
-      if (error) throw error;
-
-      window.location.href = data.authUrl;
+      const authUrl = data.authUrl as string;
+      if (window.top) {
+        // Ensure top-level navigation (avoid Google OAuth 403 in iframes)
+        (window.top as Window).location.href = authUrl;
+      } else {
+        window.location.href = authUrl;
+      }
     } catch (error) {
       console.error("Error initiating Gmail auth:", error);
       toast.error("שגיאה בהפעלת אימות Gmail");
