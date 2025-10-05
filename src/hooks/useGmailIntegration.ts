@@ -19,27 +19,6 @@ export const useGmailIntegration = () => {
     },
   });
 
-  const connectGmail = useMutation({
-    mutationFn: async (code: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase.functions.invoke("gmail-oauth", {
-        body: { code, action: "exchange" },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["gmail-status"] });
-      toast.success(`Gmail מחובר: ${data.email}`);
-    },
-    onError: (error: any) => {
-      console.error("Error connecting Gmail:", error);
-      toast.error("שגיאה בחיבור Gmail");
-    },
-  });
 
   const disconnectGmail = useMutation({
     mutationFn: async () => {
@@ -83,23 +62,12 @@ export const useGmailIntegration = () => {
   const initiateGmailAuth = async () => {
     try {
       const { data, error } = await supabase.functions.invoke("gmail-oauth", {
-        body: { action: "get-config" },
+        body: { action: "get-auth-url" },
       });
 
       if (error) throw error;
 
-      const { clientId, redirectUri } = data;
-      const scope = "https://www.googleapis.com/auth/gmail.readonly";
-      
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${clientId}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `response_type=code&` +
-        `scope=${encodeURIComponent(scope)}&` +
-        `access_type=offline&` +
-        `prompt=consent`;
-
-      window.location.href = authUrl;
+      window.location.href = data.authUrl;
     } catch (error) {
       console.error("Error initiating Gmail auth:", error);
       toast.error("שגיאה בהפעלת אימות Gmail");
@@ -109,7 +77,6 @@ export const useGmailIntegration = () => {
   return {
     gmailStatus,
     isCheckingStatus,
-    connectGmail,
     disconnectGmail,
     scanEmails,
     initiateGmailAuth,

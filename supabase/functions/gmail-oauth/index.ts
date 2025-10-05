@@ -19,13 +19,35 @@ serve(async (req) => {
 
     const { code, action } = await req.json();
 
-    // Return OAuth config for frontend (client ID is public, no auth needed)
-    if (action === 'get-config') {
+    // Generate auth URL (requires authentication to include user ID in state)
+    if (action === 'get-auth-url') {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        throw new Error('No authorization header');
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+      
+      if (userError || !user) {
+        throw new Error('Unauthorized');
+      }
+
+      const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
+      const redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI') || 'https://iucclykictjjuaabqvcv.supabase.co/functions/v1/gmail-callback';
+      const scope = 'https://www.googleapis.com/auth/gmail.readonly';
+      
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(scope)}&` +
+        `access_type=offline&` +
+        `prompt=consent&` +
+        `state=${user.id}`;
+
       return new Response(
-        JSON.stringify({
-          clientId: Deno.env.get('GOOGLE_CLIENT_ID'),
-          redirectUri: `https://preview--subtrack-saas-buddy.lovable.app/integrations`,
-        }),
+        JSON.stringify({ authUrl }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

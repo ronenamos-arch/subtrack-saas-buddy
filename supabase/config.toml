@@ -6,5 +6,8 @@ verify_jwt = true
 [functions.gmail-oauth]
 verify_jwt = true
 
+[functions.gmail-callback]
+verify_jwt = false
+
 [functions.scan-gmail]
 verify_jwt = true

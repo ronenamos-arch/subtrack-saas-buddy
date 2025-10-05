@@ -17,7 +17,6 @@ const Integrations = () => {
   const {
     gmailStatus,
     isCheckingStatus,
-    connectGmail,
     disconnectGmail,
     scanEmails,
     initiateGmailAuth,
@@ -35,15 +34,26 @@ const Integrations = () => {
     checkAuth();
   }, [navigate]);
 
-  // Handle OAuth callback
+  // Handle OAuth callback success/error from gmail-callback edge function
   useEffect(() => {
-    const code = searchParams.get('code');
-    if (code) {
-      connectGmail.mutate(code);
-      // Clean up URL
+    const connected = searchParams.get('connected');
+    const error = searchParams.get('error');
+    
+    if (connected === 'true') {
+      toast({
+        title: "Gmail מחובר בהצלחה!",
+        description: "כעת אתה יכול לסרוק אימיילים לחשבוניות",
+      });
+      window.history.replaceState({}, '', '/integrations');
+    } else if (error) {
+      toast({
+        title: "שגיאה בחיבור Gmail",
+        description: "אנא נסה שוב",
+        variant: "destructive",
+      });
       window.history.replaceState({}, '', '/integrations');
     }
-  }, [searchParams]);
+  }, [searchParams, toast]);
 
   const handleConnect = (name: string) => {
     toast({
