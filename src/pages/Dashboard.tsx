@@ -9,6 +9,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { SpendingChart } from "@/components/dashboard/SpendingChart";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
 import { UpcomingRenewals } from "@/components/dashboard/UpcomingRenewals";
+import { InsightsSection } from "@/components/dashboard/InsightsSection";
 import {
   getTotalMonthlySpend,
   getUpcomingRenewals,
@@ -122,6 +123,8 @@ const Dashboard = () => {
               <SpendingChart subscriptions={subscriptions} />
               <CategoryBreakdown subscriptions={subscriptions} />
             </div>
+
+            <InsightsSection subscriptions={subscriptions} />
 
             <UpcomingRenewals subscriptions={subscriptions} />
           </>

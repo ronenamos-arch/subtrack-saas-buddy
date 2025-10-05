@@ -1,15 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Subscription } from "@/hooks/useSubscriptions";
 import { getUpcomingRenewals, formatCurrency, getDaysUntilRenewal } from "@/lib/subscriptionCalculations";
 import { Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 interface UpcomingRenewalsProps {
   subscriptions: Subscription[];
+  limit?: number;
 }
 
-export const UpcomingRenewals = ({ subscriptions }: UpcomingRenewalsProps) => {
-  const upcomingRenewals = getUpcomingRenewals(subscriptions, 7);
+export const UpcomingRenewals = ({ subscriptions, limit = 5 }: UpcomingRenewalsProps) => {
+  const navigate = useNavigate();
+  const [showAll, setShowAll] = useState(false);
+  
+  const allUpcomingRenewals = getUpcomingRenewals(subscriptions, 7);
+  const upcomingRenewals = showAll ? allUpcomingRenewals : allUpcomingRenewals.slice(0, limit);
 
   return (
     <Card>
@@ -32,7 +40,8 @@ export const UpcomingRenewals = ({ subscriptions }: UpcomingRenewalsProps) => {
               return (
                 <div
                   key={sub.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => navigate("/subscriptions")}
                 >
                   <div className="flex-1">
                     <div className="font-semibold">{sub.service_name}</div>
@@ -51,6 +60,26 @@ export const UpcomingRenewals = ({ subscriptions }: UpcomingRenewalsProps) => {
                 </div>
               );
             })}
+            
+            {allUpcomingRenewals.length > limit && !showAll && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowAll(true)}
+              >
+                הצג את כל {allUpcomingRenewals.length} החידושים
+              </Button>
+            )}
+            
+            {showAll && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowAll(false)}
+              >
+                הצג פחות
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

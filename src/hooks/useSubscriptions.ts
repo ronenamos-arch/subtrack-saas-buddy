@@ -19,6 +19,7 @@ export interface Subscription {
   licenses_used: number;
   notes: string | null;
   website_url: string | null;
+  last_login: string | null;
   created_at: string;
   updated_at: string;
   categories?: {

@@ -169,6 +169,7 @@ export type Database = {
           created_at: string | null
           currency: string | null
           id: string
+          last_login: string | null
           licenses_count: number | null
           licenses_used: number | null
           logo_url: string | null
@@ -189,6 +190,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
+          last_login?: string | null
           licenses_count?: number | null
           licenses_used?: number | null
           logo_url?: string | null
@@ -209,6 +211,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
+          last_login?: string | null
           licenses_count?: number | null
           licenses_used?: number | null
           logo_url?: string | null
