@@ -29,7 +29,7 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
     start_date: subscription?.start_date || new Date().toISOString().split("T")[0],
     next_renewal_date: subscription?.next_renewal_date || "",
     status: subscription?.status || "active",
-    category_id: subscription?.category_id || "",
+    category_id: subscription?.category_id || "none",
     licenses_count: subscription?.licenses_count?.toString() || "1",
     licenses_used: subscription?.licenses_used?.toString() || "0",
     notes: subscription?.notes || "",
@@ -48,7 +48,7 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
       licenses_count: parseInt(formData.licenses_count),
       licenses_used: parseInt(formData.licenses_used),
       next_renewal_date: nextRenewalDate,
-      category_id: formData.category_id || null,
+      category_id: formData.category_id === "none" ? null : formData.category_id,
       notes: formData.notes || null,
       website_url: formData.website_url || null,
     };
@@ -69,7 +69,7 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
         start_date: new Date().toISOString().split("T")[0],
         next_renewal_date: "",
         status: "active",
-        category_id: "",
+        category_id: "none",
         licenses_count: "1",
         licenses_used: "0",
         notes: "",
@@ -192,7 +192,7 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
                   <SelectValue placeholder="בחר קטגוריה" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">ללא קטגוריה</SelectItem>
+                  <SelectItem value="none">ללא קטגוריה</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
