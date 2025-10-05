@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { IntegrationCard } from "@/components/integrations/IntegrationCard";
 import { Mail, FileText, Slack, Webhook, Zap, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
