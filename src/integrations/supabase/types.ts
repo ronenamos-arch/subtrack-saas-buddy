@@ -38,6 +38,99 @@ export type Database = {
         }
         Relationships: []
       }
+      gmail_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          email_address: string | null
+          id: string
+          refresh_token: string
+          token_expiry: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          email_address?: string | null
+          id?: string
+          refresh_token: string
+          token_expiry: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          email_address?: string | null
+          id?: string
+          refresh_token?: string
+          token_expiry?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount: number | null
+          billing_cycle: string | null
+          billing_date: string | null
+          created_at: string
+          currency: string | null
+          email_id: string | null
+          id: string
+          parsed_data: Json | null
+          pdf_url: string | null
+          received_date: string | null
+          sender: string | null
+          service_name: string | null
+          status: string | null
+          subject: string | null
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          billing_cycle?: string | null
+          billing_date?: string | null
+          created_at?: string
+          currency?: string | null
+          email_id?: string | null
+          id?: string
+          parsed_data?: Json | null
+          pdf_url?: string | null
+          received_date?: string | null
+          sender?: string | null
+          service_name?: string | null
+          status?: string | null
+          subject?: string | null
+          subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          billing_cycle?: string | null
+          billing_date?: string | null
+          created_at?: string
+          currency?: string | null
+          email_id?: string | null
+          id?: string
+          parsed_data?: Json | null
+          pdf_url?: string | null
+          received_date?: string | null
+          sender?: string | null
+          service_name?: string | null
+          status?: string | null
+          subject?: string | null
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
