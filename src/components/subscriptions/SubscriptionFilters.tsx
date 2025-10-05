@@ -10,6 +10,8 @@ interface SubscriptionFiltersProps {
   onStatusChange: (value: string) => void;
   categoryFilter: string;
   onCategoryChange: (value: string) => void;
+  sortBy: string;
+  onSortChange: (value: string) => void;
 }
 
 export const SubscriptionFilters = ({
@@ -19,6 +21,8 @@ export const SubscriptionFilters = ({
   onStatusChange,
   categoryFilter,
   onCategoryChange,
+  sortBy,
+  onSortChange,
 }: SubscriptionFiltersProps) => {
   const { categories } = useCategories();
 
@@ -57,6 +61,20 @@ export const SubscriptionFilters = ({
               {cat.name}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={sortBy} onValueChange={onSortChange}>
+        <SelectTrigger className="w-full md:w-[180px]">
+          <SelectValue placeholder="מיין לפי" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="renewal-asc">חידוש - מוקדם לאחרון</SelectItem>
+          <SelectItem value="renewal-desc">חידוש - אחרון למוקדם</SelectItem>
+          <SelectItem value="cost-asc">עלות - נמוכה לגבוהה</SelectItem>
+          <SelectItem value="cost-desc">עלות - גבוהה לנמוכה</SelectItem>
+          <SelectItem value="name-asc">שם - א-ת</SelectItem>
+          <SelectItem value="name-desc">שם - ת-א</SelectItem>
         </SelectContent>
       </Select>
     </div>

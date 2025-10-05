@@ -6,6 +6,8 @@ export interface Subscription {
   id: string;
   user_id: string;
   service_name: string;
+  vendor: string | null;
+  logo_url: string | null;
   cost: number;
   currency: string;
   billing_cycle: "monthly" | "yearly" | "quarterly";

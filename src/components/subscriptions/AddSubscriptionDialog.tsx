@@ -23,6 +23,8 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
 
   const [formData, setFormData] = useState({
     service_name: subscription?.service_name || "",
+    vendor: subscription?.vendor || "",
+    logo_url: subscription?.logo_url || "",
     cost: subscription?.cost?.toString() || "",
     currency: subscription?.currency || "ILS",
     billing_cycle: subscription?.billing_cycle || "monthly",
@@ -49,6 +51,8 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
       licenses_used: parseInt(formData.licenses_used),
       next_renewal_date: nextRenewalDate,
       category_id: formData.category_id === "none" ? null : formData.category_id,
+      vendor: formData.vendor || null,
+      logo_url: formData.logo_url || null,
       notes: formData.notes || null,
       website_url: formData.website_url || null,
     };
@@ -63,6 +67,8 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
     if (!isEdit) {
       setFormData({
         service_name: "",
+        vendor: "",
+        logo_url: "",
         cost: "",
         currency: "ILS",
         billing_cycle: "monthly",
@@ -105,6 +111,27 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
                 onChange={(e) => setFormData({ ...formData, service_name: e.target.value })}
                 placeholder="לדוגמה: Netflix, Microsoft 365"
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vendor">ספק/יצרן</Label>
+              <Input
+                id="vendor"
+                value={formData.vendor}
+                onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+                placeholder="לדוגמה: Microsoft, Google"
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="logo_url">כתובת לוגו</Label>
+              <Input
+                id="logo_url"
+                type="url"
+                value={formData.logo_url}
+                onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
+                placeholder="https://example.com/logo.png"
               />
             </div>
 

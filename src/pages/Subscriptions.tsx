@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Edit, Trash2, Plus } from "lucide-react";
+import { Download, Edit, Trash2, Plus, Eye, Building2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -32,6 +33,7 @@ const Subscriptions = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("renewal-asc");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<any>(null);
 
@@ -51,16 +53,39 @@ const Subscriptions = () => {
   }, [navigate]);
 
   const filteredSubscriptions = useMemo(() => {
-    return subscriptions.filter((sub) => {
+    let filtered = subscriptions.filter((sub) => {
       const matchesSearch =
         sub.service_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sub.vendor?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         sub.notes?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === "all" || sub.status === statusFilter;
       const matchesCategory =
         categoryFilter === "all" || sub.category_id === categoryFilter;
       return matchesSearch && matchesStatus && matchesCategory;
     });
-  }, [subscriptions, searchQuery, statusFilter, categoryFilter]);
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "renewal-asc":
+          return new Date(a.next_renewal_date).getTime() - new Date(b.next_renewal_date).getTime();
+        case "renewal-desc":
+          return new Date(b.next_renewal_date).getTime() - new Date(a.next_renewal_date).getTime();
+        case "cost-asc":
+          return calculateMonthlyAmount(a.cost, a.billing_cycle) - calculateMonthlyAmount(b.cost, b.billing_cycle);
+        case "cost-desc":
+          return calculateMonthlyAmount(b.cost, b.billing_cycle) - calculateMonthlyAmount(a.cost, a.billing_cycle);
+        case "name-asc":
+          return a.service_name.localeCompare(b.service_name, "he");
+        case "name-desc":
+          return b.service_name.localeCompare(a.service_name, "he");
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [subscriptions, searchQuery, statusFilter, categoryFilter, sortBy]);
 
   const handleDelete = async () => {
     if (subscriptionToDelete) {
@@ -130,6 +155,8 @@ const Subscriptions = () => {
               onStatusChange={setStatusFilter}
               categoryFilter={categoryFilter}
               onCategoryChange={setCategoryFilter}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
             />
           </CardHeader>
           <CardContent>
@@ -153,7 +180,9 @@ const Subscriptions = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="text-right w-[60px]">לוגו</TableHead>
                       <TableHead className="text-right">שם השירות</TableHead>
+                      <TableHead className="text-right">ספק</TableHead>
                       <TableHead className="text-right">עלות חודשית</TableHead>
                       <TableHead className="text-right">עלות</TableHead>
                       <TableHead className="text-right">תדירות</TableHead>
@@ -167,7 +196,22 @@ const Subscriptions = () => {
                   <TableBody>
                     {filteredSubscriptions.map((sub) => (
                       <TableRow key={sub.id}>
+                        <TableCell>
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={sub.logo_url || undefined} alt={sub.service_name} />
+                            <AvatarFallback>
+                              <Building2 className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                        </TableCell>
                         <TableCell className="font-medium">{sub.service_name}</TableCell>
+                        <TableCell>
+                          {sub.vendor ? (
+                            <span className="text-sm">{sub.vendor}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           {formatCurrency(
                             calculateMonthlyAmount(sub.cost, sub.billing_cycle),
@@ -203,7 +247,16 @@ const Subscriptions = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1">
+                            {sub.website_url && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(sub.website_url!, "_blank")}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
                             <AddSubscriptionDialog
                               subscription={sub}
                               trigger={

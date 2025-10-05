@@ -171,6 +171,7 @@ export type Database = {
           id: string
           licenses_count: number | null
           licenses_used: number | null
+          logo_url: string | null
           next_renewal_date: string
           notes: string | null
           service_name: string
@@ -178,6 +179,7 @@ export type Database = {
           status: string | null
           updated_at: string | null
           user_id: string
+          vendor: string | null
           website_url: string | null
         }
         Insert: {
@@ -189,6 +191,7 @@ export type Database = {
           id?: string
           licenses_count?: number | null
           licenses_used?: number | null
+          logo_url?: string | null
           next_renewal_date: string
           notes?: string | null
           service_name: string
@@ -196,6 +199,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           user_id: string
+          vendor?: string | null
           website_url?: string | null
         }
         Update: {
@@ -207,6 +211,7 @@ export type Database = {
           id?: string
           licenses_count?: number | null
           licenses_used?: number | null
+          logo_url?: string | null
           next_renewal_date?: string
           notes?: string | null
           service_name?: string
@@ -214,6 +219,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           user_id?: string
+          vendor?: string | null
           website_url?: string | null
         }
         Relationships: [
