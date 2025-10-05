@@ -26,7 +26,24 @@ serve(async (req) => {
 
     console.log('Parsing invoice:', fileName);
 
-    // Use Lovable AI to parse the invoice with document understanding
+    // Download and convert the PDF to base64
+    const fileResponse = await fetch(fileUrl);
+    if (!fileResponse.ok) {
+      throw new Error(`Failed to download file: ${fileResponse.statusText}`);
+    }
+    
+    const fileBuffer = await fileResponse.arrayBuffer();
+    const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+    
+    // Determine mime type from file extension
+    const mimeType = fileName.toLowerCase().endsWith('.pdf') 
+      ? 'application/pdf' 
+      : 'image/jpeg';
+
+    console.log('File size:', fileBuffer.byteLength, 'bytes');
+    console.log('Mime type:', mimeType);
+
+    // Use Lovable AI with Gemini Pro for better document understanding
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -34,27 +51,31 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           {
-            role: 'system',
-            content: `אתה מנתח חשבוניות מקצועי. תפקידך לחלץ מידע מחשבוניות בעברית ולהחזיר JSON מובנה.
-עליך לחלץ:
-- service_name: שם השירות או החברה (טקסט)
-- amount: סכום (מספר בלבד, ללא מטבע)
-- currency: מטבע (ILS, USD, EUR וכו')
-- billing_date: תאריך החיוב בפורמט YYYY-MM-DD
-- billing_cycle: מחזור חיוב (monthly, yearly, quarterly)
-- sender: שולח החשבונית
-
-אם לא מצאת מידע, השתמש ב-null.`
-          },
-          {
             role: 'user',
-            content: `נתח את החשבונית מהקובץ: ${fileName}
-בנוסף, הנה ה-URL של הקובץ: ${fileUrl}
+            content: [
+              {
+                type: 'text',
+                text: `אתה מנתח חשבוניות מקצועי. נתח את החשבונית הבאה וחלץ את המידע הבא:
+- service_name: שם השירות או החברה
+- amount: סכום מספרי בלבד (ללא מטבע)
+- currency: מטבע (ILS, USD, EUR)
+- billing_date: תאריך החיוב (YYYY-MM-DD)
+- billing_cycle: מחזור חיוב (monthly, yearly, quarterly, one-time)
+- sender: שם שולח החשבונית
 
-בבקשה חלץ את כל המידע הרלוונטי מהחשבונית.`
+חשוב: קרא את הקובץ בקפידה וחלץ את המידע האמיתי. אם לא מצאת מידע מסוים, השתמש ב-null.
+אם זה לא חשבונית אמיתית, ציין זאת.`
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64File}`
+                }
+              }
+            ]
           }
         ],
         tools: [
