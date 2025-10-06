@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/browserClient";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { IntegrationCard } from "@/components/integrations/IntegrationCard";
 import { Mail, FileText, Slack, Webhook, Zap, Calendar } from "lucide-react";
