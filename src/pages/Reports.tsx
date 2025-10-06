@@ -5,7 +5,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useCategories } from "@/hooks/useCategories";
-import { calculateMonthlyAmount, formatCurrency, getTotalMonthlySpend, getTotalYearlySpend } from "@/lib/subscriptionCalculations";
+import { calculateMonthlyAmount, getTotalMonthlySpend, getTotalYearlySpend } from "@/lib/subscriptionCalculations";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, DollarSign, Calendar, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const { subscriptions, isLoading } = useSubscriptions();
   const { categories } = useCategories();
+  const { formatCurrency, convertCurrency, userCurrency } = useCurrencyConversion();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -29,8 +31,19 @@ const Reports = () => {
   }, [navigate]);
 
   const activeSubscriptions = subscriptions.filter(sub => sub.status === "active");
-  const monthlyTotal = getTotalMonthlySpend(activeSubscriptions);
-  const yearlyTotal = getTotalYearlySpend(activeSubscriptions);
+  
+  // Calculate totals with currency conversion
+  const monthlyTotal = activeSubscriptions.reduce((total, sub) => {
+    const monthlyCost = calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+    return total + convertCurrency(monthlyCost, sub.currency);
+  }, 0);
+  
+  const yearlyTotal = activeSubscriptions.reduce((total, sub) => {
+    const yearlyCost = sub.billing_cycle === "monthly" ? sub.cost * 12 :
+                       sub.billing_cycle === "quarterly" ? sub.cost * 4 :
+                       sub.cost;
+    return total + convertCurrency(yearlyCost, sub.currency);
+  }, 0);
 
   // Group by billing cycle
   const cycleData = [
@@ -39,10 +52,13 @@ const Reports = () => {
     { name: "שנתי", count: activeSubscriptions.filter(s => s.billing_cycle === "yearly").length },
   ].filter(d => d.count > 0);
 
-  // Group by category
+  // Group by category with currency conversion
   const categoryData = categories.map(cat => {
     const catSubs = activeSubscriptions.filter(s => s.category_id === cat.id);
-    const total = catSubs.reduce((sum, sub) => sum + calculateMonthlyAmount(sub.cost, sub.billing_cycle), 0);
+    const total = catSubs.reduce((sum, sub) => {
+      const monthlyCost = calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+      return sum + convertCurrency(monthlyCost, sub.currency);
+    }, 0);
     return {
       name: cat.name,
       value: total,
@@ -85,7 +101,7 @@ const Reports = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(monthlyTotal, "ILS")}</div>
+              <div className="text-2xl font-bold">{formatCurrency(monthlyTotal, userCurrency, { convert: false })}</div>
             </CardContent>
           </Card>
           <Card>
@@ -94,7 +110,7 @@ const Reports = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(yearlyTotal, "ILS")}</div>
+              <div className="text-2xl font-bold">{formatCurrency(yearlyTotal, userCurrency, { convert: false })}</div>
             </CardContent>
           </Card>
           <Card>
@@ -104,7 +120,7 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatCurrency(activeSubscriptions.length > 0 ? monthlyTotal / activeSubscriptions.length : 0, "ILS")}
+                {formatCurrency(activeSubscriptions.length > 0 ? monthlyTotal / activeSubscriptions.length : 0, userCurrency, { convert: false })}
               </div>
             </CardContent>
           </Card>
@@ -149,7 +165,7 @@ const Reports = () => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry) => `${entry.name}: ${formatCurrency(entry.value, "ILS")}`}
+                      label={(entry) => `${entry.name}: ${formatCurrency(entry.value, userCurrency, { convert: false })}`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -158,7 +174,7 @@ const Reports = () => {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => formatCurrency(value as number, "ILS")} />
+                    <Tooltip formatter={(value) => formatCurrency(value as number, userCurrency, { convert: false })} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (

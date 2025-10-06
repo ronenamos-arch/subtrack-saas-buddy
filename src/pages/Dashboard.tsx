@@ -13,14 +13,15 @@ import { InsightsSection } from "@/components/dashboard/InsightsSection";
 import {
   getTotalMonthlySpend,
   getUpcomingRenewals,
-  formatCurrency,
   calculateMonthlyAmount,
 } from "@/lib/subscriptionCalculations";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const { subscriptions, isLoading } = useSubscriptions();
+  const { formatCurrency, convertCurrency, userCurrency } = useCurrencyConversion();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -45,12 +46,20 @@ const Dashboard = () => {
 
   const activeSubscriptions = subscriptions.filter((sub) => sub.status === "active");
   const inactiveSubscriptions = subscriptions.filter((sub) => sub.status !== "active");
-  const totalMonthlySpend = getTotalMonthlySpend(subscriptions);
+  
+  // Calculate with currency conversion
+  const totalMonthlySpend = activeSubscriptions.reduce((total, sub) => {
+    const monthlyCost = calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+    return total + convertCurrency(monthlyCost, sub.currency);
+  }, 0);
+  
   const upcomingRenewals = getUpcomingRenewals(subscriptions, 7);
-  const potentialSavings = inactiveSubscriptions.reduce(
-    (total, sub) => total + calculateMonthlyAmount(sub.cost, sub.billing_cycle),
-    0
-  );
+  
+  const potentialSavings = inactiveSubscriptions.reduce((total, sub) => {
+    const monthlyCost = calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+    return total + convertCurrency(monthlyCost, sub.currency);
+  }, 0);
+  
   const averagePerSubscription = activeSubscriptions.length > 0 
     ? totalMonthlySpend / activeSubscriptions.length 
     : 0;
@@ -75,7 +84,7 @@ const Dashboard = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="הוצאה חודשית"
-            value={formatCurrency(totalMonthlySpend)}
+            value={formatCurrency(totalMonthlySpend, userCurrency, { convert: false })}
             description={`${activeSubscriptions.length} מנויים פעילים`}
             icon={CreditCard}
             trend={{
@@ -104,14 +113,14 @@ const Dashboard = () => {
 
           <StatCard
             title="פוטנציאל חיסכון"
-            value={formatCurrency(potentialSavings)}
+            value={formatCurrency(potentialSavings, userCurrency, { convert: false })}
             description="מ-ה מיטוב לא פעילים"
             icon={TrendingUp}
           />
 
           <StatCard
             title="ממוצע למנוי"
-            value={formatCurrency(averagePerSubscription)}
+            value={formatCurrency(averagePerSubscription, userCurrency, { convert: false })}
             description="מתוך חודש קודם"
             icon={TrendingUp}
             trend={{

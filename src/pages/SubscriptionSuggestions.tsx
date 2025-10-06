@@ -6,12 +6,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSubscriptionSuggestions } from "@/hooks/useSubscriptionSuggestions";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 import { Check, X, AlertTriangle } from "lucide-react";
 
 const SubscriptionSuggestions = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const { suggestions, isLoading, approveSuggestion, rejectSuggestion } = useSubscriptionSuggestions();
+  const { formatCurrency } = useCurrencyConversion();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -24,13 +26,6 @@ const SubscriptionSuggestions = () => {
     };
     checkAuth();
   }, [navigate]);
-
-  const formatCurrency = (amount: number, currency: string = "ILS") => {
-    return new Intl.NumberFormat("he-IL", {
-      style: "currency",
-      currency: currency,
-    }).format(amount);
-  };
 
   const getBillingCycleLabel = (cycle: string) => {
     const labels: { [key: string]: string } = {

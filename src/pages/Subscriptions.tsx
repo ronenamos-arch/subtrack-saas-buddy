@@ -21,11 +21,11 @@ import { DeleteConfirmDialog } from "@/components/subscriptions/DeleteConfirmDia
 import { SubscriptionFilters } from "@/components/subscriptions/SubscriptionFilters";
 import { exportSubscriptionsToExcel } from "@/lib/exportToExcel";
 import {
-  formatCurrency,
   getBillingCycleLabel,
   getDaysUntilRenewal,
   calculateMonthlyAmount,
 } from "@/lib/subscriptionCalculations";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 
 const Subscriptions = () => {
   const navigate = useNavigate();
@@ -38,6 +38,7 @@ const Subscriptions = () => {
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<any>(null);
 
   const { subscriptions, isLoading, deleteSubscription } = useSubscriptions();
+  const { formatCurrency } = useCurrencyConversion();
 
   useEffect(() => {
     const checkAuth = async () => {

@@ -2,7 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Subscription } from "@/hooks/useSubscriptions";
-import { getUpcomingRenewals, formatCurrency, getDaysUntilRenewal } from "@/lib/subscriptionCalculations";
+import { getUpcomingRenewals, getDaysUntilRenewal } from "@/lib/subscriptionCalculations";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 import { Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -15,6 +16,7 @@ interface UpcomingRenewalsProps {
 export const UpcomingRenewals = ({ subscriptions, limit = 5 }: UpcomingRenewalsProps) => {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
+  const { formatCurrency } = useCurrencyConversion();
   
   const allUpcomingRenewals = getUpcomingRenewals(subscriptions, 7);
   const upcomingRenewals = showAll ? allUpcomingRenewals : allUpcomingRenewals.slice(0, limit);

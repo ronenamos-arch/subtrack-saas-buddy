@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useInvoices } from "@/hooks/useInvoices";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 import { FileText, Download, Trash2, Calendar, DollarSign, Eye } from "lucide-react";
 import { useState } from "react";
 import {
@@ -21,6 +22,7 @@ import { toast } from "@/hooks/use-toast";
 
 const InvoicesHistory = () => {
   const { invoices, isLoading } = useInvoices();
+  const { formatCurrency } = useCurrencyConversion();
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -188,10 +190,7 @@ const InvoicesHistory = () => {
                               <div>
                                 <p className="text-xs text-muted-foreground">סכום</p>
                                 <p className="font-semibold">
-                                  {new Intl.NumberFormat("he-IL", {
-                                    style: "currency",
-                                    currency: invoice.currency || "ILS",
-                                  }).format(invoice.amount)}
+                                  {formatCurrency(invoice.amount, invoice.currency || "ILS")}
                                 </p>
                               </div>
                             </div>
