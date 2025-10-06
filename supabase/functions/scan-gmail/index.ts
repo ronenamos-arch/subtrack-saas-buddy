@@ -19,17 +19,34 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { daysBack = 365 } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    let { daysBack = 365 } = body;
+    
+    // Validate daysBack parameter (1-730 days)
+    if (typeof daysBack !== 'number' || daysBack < 1 || daysBack > 730) {
+      return new Response(
+        JSON.stringify({ error: 'daysBack must be between 1 and 730 days' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    daysBack = Math.floor(daysBack); // Ensure integer
 
     // Get user's Gmail token
     const { data: tokenData, error: tokenError } = await supabaseClient
@@ -39,7 +56,10 @@ serve(async (req) => {
       .single();
 
     if (tokenError || !tokenData) {
-      throw new Error('Gmail not connected');
+      return new Response(
+        JSON.stringify({ error: 'Gmail not connected' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Check if token needs refresh
@@ -88,7 +108,11 @@ serve(async (req) => {
     );
 
     if (!searchResponse.ok) {
-      throw new Error('Failed to search emails');
+      console.error('Gmail search failed:', searchResponse.status);
+      return new Response(
+        JSON.stringify({ error: 'Failed to search emails' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const searchData = await searchResponse.json();
@@ -130,6 +154,12 @@ serve(async (req) => {
           )) {
             attachmentFound = true;
 
+            // Validate filename
+            if (!/^[\w\s.-]{1,255}$/.test(part.filename)) {
+              console.warn('Skipping attachment with invalid filename');
+              continue;
+            }
+
             // Get attachment data
             const attachmentResponse = await fetch(
               `https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}/attachments/${part.body.attachmentId}`,
@@ -147,6 +177,13 @@ serve(async (req) => {
             
             // Decode and upload to storage
             const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            
+            // Check file size (10MB limit)
+            if (binaryData.byteLength > 10 * 1024 * 1024) {
+              console.warn('Skipping attachment exceeding 10MB');
+              continue;
+            }
+            
             const blob = new Blob([binaryData]);
             
             const fileName = `${user.id}/${Date.now()}_${part.filename}`;
@@ -155,7 +192,7 @@ serve(async (req) => {
               .upload(fileName, blob);
 
             if (uploadError) {
-              console.error('Upload error:', uploadError);
+              console.error('Upload error:', uploadError.message);
               continue;
             }
 
@@ -180,17 +217,17 @@ serve(async (req) => {
               .from('invoices')
               .getPublicUrl(fileName);
 
-            // Create invoice record
+            // Create invoice record with sanitized data
             const { data: invoice } = await supabaseClient
               .from('invoices')
               .insert({
                 user_id: user.id,
                 email_id: message.id,
-                sender: from,
-                subject: subject,
+                sender: from?.substring(0, 200),
+                subject: subject?.substring(0, 500),
                 received_date: date ? new Date(date).toISOString() : null,
                 pdf_url: publicUrl,
-                service_name: parsed.service_name,
+                service_name: parsed.service_name?.substring(0, 200),
                 amount: parsed.amount,
                 currency: parsed.currency || 'ILS',
                 billing_date: parsed.billing_date,
@@ -225,8 +262,8 @@ serve(async (req) => {
                 .insert({
                   user_id: user.id,
                   invoice_id: invoice.id,
-                  service_name: parsed.service_name,
-                  vendor: parsed.sender,
+                  service_name: parsed.service_name?.substring(0, 200),
+                  vendor: parsed.sender?.substring(0, 200),
                   amount: parsed.amount,
                   currency: parsed.currency || 'ILS',
                   billing_cycle: parsed.billing_cycle,
@@ -244,7 +281,7 @@ serve(async (req) => {
           }
         }
       } catch (error) {
-        console.error('Error processing message:', error);
+        console.error('Error processing message:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
@@ -258,13 +295,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
-    console.error('Error in scan-gmail function:', error);
+    console.error('Error in scan-gmail:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: 'An error occurred while scanning emails' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

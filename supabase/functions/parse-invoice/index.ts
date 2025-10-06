@@ -13,23 +13,70 @@ serve(async (req) => {
   }
 
   try {
-    const { fileUrl, fileName } = await req.json();
+    const body = await req.json();
+    const { fileUrl, fileName } = body;
     
-    if (!fileUrl) {
-      throw new Error('File URL is required');
+    // Input validation
+    if (!fileUrl || typeof fileUrl !== 'string') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid file URL provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Validate URL format and protocol
+    try {
+      const url = new URL(fileUrl);
+      if (url.protocol !== 'https:') {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Only HTTPS URLs are allowed' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid URL format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Validate fileName (alphanumeric, dots, dashes, underscores only)
+    if (fileName && !/^[\w.-]{1,255}$/.test(fileName)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid file name format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+      console.error('LOVABLE_API_KEY not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Service configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Parsing invoice:', fileName);
+    console.log('Parsing invoice');
 
-    // Download and convert the PDF to base64
+    // Download the file from the signed URL
     const fileResponse = await fetch(fileUrl);
+    
     if (!fileResponse.ok) {
-      throw new Error(`Failed to download file: ${fileResponse.statusText}`);
+      console.error('File download failed with status:', fileResponse.status);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to download file for processing' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Check file size (10MB limit)
+    const contentLength = fileResponse.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'File size exceeds 10MB limit' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
     const fileBuffer = await fileResponse.arrayBuffer();
@@ -41,7 +88,6 @@ serve(async (req) => {
       : 'image/jpeg';
 
     console.log('File size:', fileBuffer.byteLength, 'bytes');
-    console.log('Mime type:', mimeType);
 
     // Use Lovable AI with Gemini Pro for better document understanding
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -111,11 +157,14 @@ serve(async (req) => {
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to process invoice with AI' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI Response:', JSON.stringify(aiData));
+    console.log('AI Response received');
 
     let parsedData = null;
     if (aiData.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments) {
@@ -139,11 +188,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: 'An error occurred while processing the invoice'
       }),
-      {
+      { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }

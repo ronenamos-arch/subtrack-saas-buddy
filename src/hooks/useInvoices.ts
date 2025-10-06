@@ -43,7 +43,18 @@ export const useInvoices = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      // Upload file to storage
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("File size exceeds 10MB limit");
+      }
+
+      // Validate file type
+      const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      if (!validTypes.includes(file.type)) {
+        throw new Error("Invalid file type. Only PDF and images are allowed");
+      }
+
+      // Upload file to storage with user ID in path for RLS
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
@@ -222,6 +233,17 @@ export const useInvoices = () => {
 
       // Upload file if provided
       if (invoice.file) {
+        // Validate file size (10MB limit)
+        if (invoice.file.size > 10 * 1024 * 1024) {
+          throw new Error("File size exceeds 10MB limit");
+        }
+
+        // Validate file type
+        const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+        if (!validTypes.includes(invoice.file.type)) {
+          throw new Error("Invalid file type. Only PDF and images are allowed");
+        }
+
         const fileExt = invoice.file.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         

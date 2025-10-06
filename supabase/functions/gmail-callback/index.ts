@@ -15,23 +15,26 @@ Deno.serve(async (req) => {
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
-
-    console.log('Gmail callback received:', { 
-      url: url.href,
-      hasCode: !!code, 
-      hasState: !!state, 
-      hasError: !!error,
-      allParams: Object.fromEntries(url.searchParams)
-    });
+    
+    const APP_URL = Deno.env.get('APP_URL') || 'https://preview--subtrack-saas-buddy.lovable.app';
+    
+    console.log('OAuth callback received', { hasCode: !!code, hasState: !!state, error });
 
     if (error) {
       console.error('OAuth error:', error);
-      return Response.redirect(`${Deno.env.get('APP_URL') || 'https://preview--subtrack-saas-buddy.lovable.app'}/integrations?error=${error}`);
+      return Response.redirect(`${APP_URL}/integrations?status=error&message=oauth_error`);
     }
 
-    if (!code) {
-      console.error('No authorization code received. URL:', url.href);
-      throw new Error('No authorization code received');
+    // Validate authorization code
+    if (!code || typeof code !== 'string') {
+      console.error('Invalid authorization code');
+      return Response.redirect(`${APP_URL}/integrations?status=error&message=invalid_code`);
+    }
+    
+    // Validate state parameter format (should be user ID)
+    if (!state || typeof state !== 'string') {
+      console.error('Invalid state parameter');
+      return Response.redirect(`${APP_URL}/integrations?status=error&message=invalid_state`);
     }
 
     // Exchange code for tokens
@@ -49,8 +52,8 @@ Deno.serve(async (req) => {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error('Token exchange failed:', errorData);
-      throw new Error('Failed to exchange code for tokens');
+      console.error('Token exchange failed:', tokenResponse.status);
+      return Response.redirect(`${APP_URL}/integrations?status=error&message=token_exchange_failed`);
     }
 
     const tokens = await tokenResponse.json();
@@ -61,17 +64,14 @@ Deno.serve(async (req) => {
     });
 
     if (!profileResponse.ok) {
-      throw new Error('Failed to get Gmail profile');
+      console.error('Failed to get Gmail profile');
+      return Response.redirect(`${APP_URL}/integrations?status=error&message=profile_fetch_failed`);
     }
 
     const profile = await profileResponse.json();
 
-    // Parse state to get user ID (if provided)
+    // Use state as user ID
     const userId = state;
-
-    if (!userId) {
-      throw new Error('User ID not found in state');
-    }
 
     // Store tokens in Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -91,17 +91,16 @@ Deno.serve(async (req) => {
       });
 
     if (dbError) {
-      console.error('Database error:', dbError);
-      throw new Error('Failed to store tokens');
+      console.error('Database error:', dbError.message);
+      return Response.redirect(`${APP_URL}/integrations?status=error&message=storage_failed`);
     }
 
-    // Redirect back to app
-    const appUrl = Deno.env.get('APP_URL') || 'https://preview--subtrack-saas-buddy.lovable.app';
-    return Response.redirect(`${appUrl}/integrations?connected=true`);
+    // Redirect back to app with success
+    return Response.redirect(`${APP_URL}/integrations?status=success`);
 
   } catch (error) {
-    console.error('Error in gmail-callback:', error);
-    const appUrl = Deno.env.get('APP_URL') || 'https://preview--subtrack-saas-buddy.lovable.app';
-    return Response.redirect(`${appUrl}/integrations?error=auth_failed`);
+    console.error('Error in gmail-callback:', error instanceof Error ? error.message : error);
+    const APP_URL = Deno.env.get('APP_URL') || 'https://preview--subtrack-saas-buddy.lovable.app';
+    return Response.redirect(`${APP_URL}/integrations?status=error&message=auth_failed`);
   }
 });

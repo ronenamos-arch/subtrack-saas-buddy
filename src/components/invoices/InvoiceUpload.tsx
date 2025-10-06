@@ -10,8 +10,15 @@ export const InvoiceUpload = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
     if (!file.type.includes('pdf') && !file.type.includes('image')) {
       alert('נא להעלות קובץ PDF או תמונה');
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('גודל הקובץ חורג מ-10MB');
       return;
     }
 

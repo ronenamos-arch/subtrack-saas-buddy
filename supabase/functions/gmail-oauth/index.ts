@@ -17,20 +17,36 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { code, action } = await req.json();
+    const body = await req.json();
+    const { code, action } = body;
+    
+    // Validate action parameter
+    const validActions = ['get-auth-url', 'exchange', 'refresh', 'disconnect'];
+    if (action && !validActions.includes(action)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid action specified' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Generate auth URL (requires authentication to include user ID in state)
     if (action === 'get-auth-url') {
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
-        throw new Error('No authorization header');
+        return new Response(
+          JSON.stringify({ error: 'Authentication required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
       
       if (userError || !user) {
-        throw new Error('Unauthorized');
+        return new Response(
+          JSON.stringify({ error: 'Invalid authentication' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
@@ -55,17 +71,31 @@ serve(async (req) => {
     // All other actions require authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     if (action === 'exchange') {
+      // Validate code
+      if (!code || typeof code !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid authorization code' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Exchange authorization code for tokens
       const redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI') || 'https://iucclykictjjuaabqvcv.supabase.co/functions/v1/gmail-callback';
       
@@ -82,9 +112,11 @@ serve(async (req) => {
       });
 
       if (!tokenResponse.ok) {
-        const error = await tokenResponse.text();
-        console.error('Token exchange error:', error);
-        throw new Error('Failed to exchange code for tokens');
+        console.error('Token exchange failed:', tokenResponse.status);
+        return new Response(
+          JSON.stringify({ error: 'Failed to authenticate with Gmail' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const tokens = await tokenResponse.json();
@@ -94,6 +126,14 @@ serve(async (req) => {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
       });
       
+      if (!profileResponse.ok) {
+        console.error('Failed to fetch Gmail profile');
+        return new Response(
+          JSON.stringify({ error: 'Failed to retrieve email profile' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const profile = await profileResponse.json();
 
       // Store tokens in database
@@ -109,7 +149,13 @@ serve(async (req) => {
           onConflict: 'user_id',
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Failed to store tokens:', insertError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to complete Gmail connection' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       return new Response(
         JSON.stringify({ success: true, email: profile.emailAddress }),
@@ -124,7 +170,10 @@ serve(async (req) => {
         .single();
 
       if (!tokenData) {
-        throw new Error('No refresh token found');
+        return new Response(
+          JSON.stringify({ error: 'Gmail not connected' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -139,7 +188,11 @@ serve(async (req) => {
       });
 
       if (!tokenResponse.ok) {
-        throw new Error('Failed to refresh token');
+        console.error('Token refresh failed');
+        return new Response(
+          JSON.stringify({ error: 'Failed to refresh Gmail access' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       const tokens = await tokenResponse.json();
@@ -153,7 +206,13 @@ serve(async (req) => {
         })
         .eq('user_id', user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Failed to update tokens:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update Gmail access' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       return new Response(
         JSON.stringify({ success: true, access_token: tokens.access_token }),
@@ -186,15 +245,15 @@ serve(async (req) => {
       );
     }
 
-    throw new Error('Invalid action');
-  } catch (error: any) {
-    console.error('Error in gmail-oauth function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: 'Invalid action' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error: any) {
+    console.error('Error in gmail-oauth:', error);
+    return new Response(
+      JSON.stringify({ error: 'An error occurred processing your request' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
