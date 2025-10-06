@@ -8,6 +8,7 @@ import { Info, History } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { InvoiceUpload } from "@/components/invoices/InvoiceUpload";
 import { InvoiceList } from "@/components/invoices/InvoiceList";
+import { ManualInvoiceDialog } from "@/components/invoices/ManualInvoiceDialog";
 
 const Invoices = () => {
   const [loading, setLoading] = useState(true);
@@ -41,13 +42,16 @@ const Invoices = () => {
               העלה חשבוניות לניתוח אוטומטי עם בינה מלאכותית
             </p>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/invoices/history")}
-          >
-            <History className="h-4 w-4 ml-2" />
-            היסטוריית חשבוניות
-          </Button>
+          <div className="flex gap-2">
+            <ManualInvoiceDialog />
+            <Button
+              variant="outline"
+              onClick={() => navigate("/invoices/history")}
+            >
+              <History className="h-4 w-4 ml-2" />
+              היסטוריית חשבוניות
+            </Button>
+          </div>
         </div>
 
         <Alert>

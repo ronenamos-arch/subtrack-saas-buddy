@@ -205,6 +205,78 @@ export const useInvoices = () => {
     },
   });
 
+  const addManualInvoice = useMutation({
+    mutationFn: async (invoice: {
+      service_name: string;
+      sender: string | null;
+      amount: number;
+      currency: string;
+      billing_cycle: string;
+      billing_date: string;
+      file?: File;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      let pdfUrl: string | null = null;
+
+      // Upload file if provided
+      if (invoice.file) {
+        const fileExt = invoice.file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('invoices')
+          .upload(fileName, invoice.file);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('invoices')
+          .getPublicUrl(fileName);
+        
+        pdfUrl = publicUrl;
+      }
+
+      // Create invoice record
+      const { data, error: insertError } = await supabase
+        .from('invoices')
+        .insert({
+          user_id: user.id,
+          pdf_url: pdfUrl,
+          sender: invoice.sender,
+          service_name: invoice.service_name,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          billing_date: invoice.billing_date,
+          billing_cycle: invoice.billing_cycle,
+          status: 'pending',
+          parsed_data: {
+            service_name: invoice.service_name,
+            sender: invoice.sender,
+            amount: invoice.amount,
+            currency: invoice.currency,
+            billing_date: invoice.billing_date,
+            billing_cycle: invoice.billing_cycle,
+          }
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("החשבונית נוספה בהצלחה");
+    },
+    onError: (error: any) => {
+      console.error("Error adding manual invoice:", error);
+      toast.error("שגיאה בהוספת החשבונית");
+    },
+  });
+
   const deleteInvoice = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -227,6 +299,7 @@ export const useInvoices = () => {
     invoices: invoices || [],
     isLoading,
     uploadInvoice,
+    addManualInvoice,
     updateInvoiceStatus,
     deleteInvoice,
   };
