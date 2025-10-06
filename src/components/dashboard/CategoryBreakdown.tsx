@@ -40,13 +40,13 @@ export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => 
 
   if (data.length === 0) {
     return (
-      <Card>
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
-          <CardTitle>פילוח לפי קטגוריה</CardTitle>
+          <CardTitle>פילוח הוצאות לפי קטגוריה</CardTitle>
           <CardDescription>הוצאות חודשיות לפי קטגוריות</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+          <div className="flex items-center justify-center h-[350px] text-muted-foreground">
             אין נתונים להצגה
           </div>
         </CardContent>
@@ -55,13 +55,13 @@ export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => 
   }
 
   return (
-    <Card>
+    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
       <CardHeader>
-        <CardTitle>פילוח לפי קטגוריה</CardTitle>
+        <CardTitle>פילוח הוצאות לפי קטגוריה</CardTitle>
         <CardDescription>הוצאות חודשיות לפי קטגוריות</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={350}>
           <PieChart>
             <Pie
               data={data}
@@ -69,7 +69,8 @@ export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => 
               cy="50%"
               labelLine={false}
               label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-              outerRadius={80}
+              outerRadius={100}
+              innerRadius={60}
               fill="#8884d8"
               dataKey="value"
             >
@@ -80,12 +81,16 @@ export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => 
             <Tooltip
               formatter={(value: any) => [`₪${value}`, "הוצאה חודשית"]}
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
               }}
             />
-            <Legend />
+            <Legend 
+              wrapperStyle={{
+                paddingTop: "20px"
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

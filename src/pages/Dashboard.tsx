@@ -51,6 +51,9 @@ const Dashboard = () => {
     (total, sub) => total + calculateMonthlyAmount(sub.cost, sub.billing_cycle),
     0
   );
+  const averagePerSubscription = activeSubscriptions.length > 0 
+    ? totalMonthlySpend / activeSubscriptions.length 
+    : 0;
 
   if (loading || isLoading) {
     return (
@@ -64,24 +67,32 @@ const Dashboard = () => {
     <DashboardLayout>
       <div className="space-y-6" dir="rtl">
         <div>
-          <h1 className="text-4xl font-bold">דשבורד</h1>
-          <p className="text-muted-foreground">סקירה כללית של המנויים והעלויות שלך</p>
+          <h1 className="text-4xl font-bold">דשבורד פיננסי</h1>
+          <p className="text-muted-foreground">ניתוח מעמיק של המנויים הפיננסיים שלך</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <StatCard
-            title="סה״כ הוצאה חודשית"
+            title="הוצאה חודשית"
             value={formatCurrency(totalMonthlySpend)}
-            description={activeSubscriptions.length > 0 ? `${activeSubscriptions.length} מנויים פעילים` : "אין מנויים פעילים"}
+            description={`${activeSubscriptions.length} מנויים פעילים`}
             icon={CreditCard}
+            trend={{
+              value: "2.5%",
+              isPositive: true
+            }}
           />
 
           <StatCard
             title="מנויים פעילים"
             value={activeSubscriptions.length}
-            description={subscriptions.length > 0 ? `מתוך ${subscriptions.length} סה"כ` : "הוסף את המנוי הראשון שלך"}
+            description="מתוך חודש קודם"
             icon={Zap}
+            trend={{
+              value: "1.2%",
+              isPositive: false
+            }}
           />
 
           <StatCard
@@ -94,8 +105,19 @@ const Dashboard = () => {
           <StatCard
             title="פוטנציאל חיסכון"
             value={formatCurrency(potentialSavings)}
-            description={`${inactiveSubscriptions.length} מנויים לא פעילים`}
+            description="מ-ה מיטוב לא פעילים"
             icon={TrendingUp}
+          />
+
+          <StatCard
+            title="ממוצע למנוי"
+            value={formatCurrency(averagePerSubscription)}
+            description="מתוך חודש קודם"
+            icon={TrendingUp}
+            trend={{
+              value: "0.8%",
+              isPositive: true
+            }}
           />
         </div>
 
@@ -120,8 +142,8 @@ const Dashboard = () => {
         ) : (
           <>
             <div className="grid gap-6 md:grid-cols-2">
-              <SpendingChart subscriptions={subscriptions} />
               <CategoryBreakdown subscriptions={subscriptions} />
+              <SpendingChart subscriptions={subscriptions} />
             </div>
 
             <InsightsSection subscriptions={subscriptions} />

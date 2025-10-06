@@ -6,6 +6,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { Subscription } from "@/hooks/useSubscriptions";
@@ -16,12 +17,12 @@ interface SpendingChartProps {
 }
 
 export const SpendingChart = ({ subscriptions }: SpendingChartProps) => {
-  // Generate data for last 6 months
+  // Generate data for last 12 months
   const generateChartData = () => {
     const months = [];
     const today = new Date();
 
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 11; i >= 0; i--) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const monthName = date.toLocaleDateString("he-IL", { month: "short" });
 
@@ -35,9 +36,20 @@ export const SpendingChart = ({ subscriptions }: SpendingChartProps) => {
           return total + calculateMonthlyAmount(sub.cost, sub.billing_cycle);
         }, 0);
 
+      // Calculate potential savings (inactive subscriptions)
+      const inactiveSpending = subscriptions
+        .filter((sub) => {
+          const startDate = new Date(sub.start_date);
+          return startDate <= date && sub.status !== "active";
+        })
+        .reduce((total, sub) => {
+          return total + calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+        }, 0);
+
       months.push({
         name: monthName,
-        amount: Math.round(monthSpending),
+        הוצאות: Math.round(monthSpending),
+        חיסכון: Math.round(inactiveSpending),
       });
     }
 
@@ -47,32 +59,53 @@ export const SpendingChart = ({ subscriptions }: SpendingChartProps) => {
   const data = generateChartData();
 
   return (
-    <Card>
+    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
       <CardHeader>
-        <CardTitle>מגמת הוצאות</CardTitle>
-        <CardDescription>הוצאות חודשיות ב-6 החודשים האחרונים</CardDescription>
+        <CardTitle>מגמות הוצאות חודשיות</CardTitle>
+        <CardDescription>הוצאות והיכולת ב-12 החודשים האחרונים</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={350}>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <XAxis 
+              dataKey="name" 
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+            />
+            <YAxis 
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+            />
             <Tooltip
-              formatter={(value: any) => [`₪${value}`, "הוצאה חודשית"]}
+              formatter={(value: any) => [`₪${value}`]}
               labelStyle={{ color: "hsl(var(--foreground))" }}
               contentStyle={{
-                backgroundColor: "hsl(var(--background))",
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
               }}
             />
+            <Legend 
+              wrapperStyle={{
+                paddingTop: "20px"
+              }}
+            />
             <Line
               type="monotone"
-              dataKey="amount"
+              dataKey="הוצאות"
               stroke="hsl(var(--primary))"
               strokeWidth={2}
-              dot={{ fill: "hsl(var(--primary))" }}
+              dot={{ fill: "hsl(var(--primary))", r: 4 }}
+              activeDot={{ r: 6 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="חיסכון"
+              stroke="hsl(var(--success))"
+              strokeWidth={2}
+              dot={{ fill: "hsl(var(--success))", r: 4 }}
+              activeDot={{ r: 6 }}
             />
           </LineChart>
         </ResponsiveContainer>
