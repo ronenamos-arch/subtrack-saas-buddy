@@ -49,6 +49,45 @@ serve(async (req) => {
         );
       }
 
+      // Generate CSRF token for OAuth flow security
+      const csrfToken = crypto.randomUUID();
+      const stateToken = `${user.id}:${csrfToken}:${Date.now()}`;
+
+      // Store pending OAuth state for CSRF validation
+      const { error: stateError } = await supabaseClient
+        .from('oauth_pending_states')
+        .insert({
+          user_id: user.id,
+          state_token: stateToken,
+          csrf_token: csrfToken,
+        });
+
+      if (stateError) {
+        console.error('Failed to store OAuth state:', stateError);
+        // Audit log the failure
+        await supabaseClient.from('oauth_audit_log').insert({
+          user_id: user.id,
+          event_type: 'oauth_state_creation_failed',
+          event_details: { error: stateError.message },
+          ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
+          user_agent: req.headers.get('user-agent'),
+        });
+        
+        return new Response(
+          JSON.stringify({ error: 'Failed to initiate OAuth flow' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Audit log OAuth initiation
+      await supabaseClient.from('oauth_audit_log').insert({
+        user_id: user.id,
+        event_type: 'oauth_flow_initiated',
+        event_details: { provider: 'google_gmail' },
+        ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
+        user_agent: req.headers.get('user-agent'),
+      });
+
       const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
       const redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI') || 'https://iucclykictjjuaabqvcv.supabase.co/functions/v1/gmail-callback';
       const scope = 'https://www.googleapis.com/auth/gmail.readonly';
@@ -60,7 +99,7 @@ serve(async (req) => {
         `scope=${encodeURIComponent(scope)}&` +
         `access_type=offline&` +
         `prompt=consent&` +
-        `state=${user.id}`;
+        `state=${encodeURIComponent(stateToken)}`;
 
       return new Response(
         JSON.stringify({ authUrl }),
@@ -237,6 +276,15 @@ serve(async (req) => {
           .from('gmail_tokens')
           .delete()
           .eq('user_id', user.id);
+
+        // Audit log disconnection
+        await supabaseClient.from('oauth_audit_log').insert({
+          user_id: user.id,
+          event_type: 'gmail_disconnected',
+          event_details: { provider: 'google_gmail' },
+          ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
+          user_agent: req.headers.get('user-agent'),
+        });
       }
 
       return new Response(

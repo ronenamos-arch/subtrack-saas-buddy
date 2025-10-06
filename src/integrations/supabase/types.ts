@@ -161,6 +161,66 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_audit_log: {
+        Row: {
+          created_at: string
+          event_details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      oauth_pending_states: {
+        Row: {
+          created_at: string
+          csrf_token: string
+          expires_at: string
+          id: string
+          state_token: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          csrf_token: string
+          expires_at?: string
+          id?: string
+          state_token: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          csrf_token?: string
+          expires_at?: string
+          id?: string
+          state_token?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -336,7 +396,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_oauth_states: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
