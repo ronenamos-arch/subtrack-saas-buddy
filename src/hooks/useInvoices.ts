@@ -111,16 +111,94 @@ export const useInvoices = () => {
 
   const updateInvoiceStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase
-        .from('invoices')
-        .update({ status })
-        .eq('id', id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
 
-      if (error) throw error;
+      // If status is approved, create or update subscription
+      if (status === 'approved') {
+        // Get invoice details
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (invoiceError) throw invoiceError;
+
+        // Check if there's already a subscription for this service
+        const { data: existingSubscription } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .ilike('service_name', invoice.service_name || '')
+          .maybeSingle();
+
+        let subscriptionId = existingSubscription?.id;
+
+        if (existingSubscription) {
+          // Update existing subscription
+          const { error: updateError } = await supabase
+            .from('subscriptions')
+            .update({
+              cost: invoice.amount || 0,
+              billing_cycle: invoice.billing_cycle || 'monthly',
+              next_renewal_date: invoice.billing_date || new Date().toISOString().split('T')[0],
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingSubscription.id);
+
+          if (updateError) throw updateError;
+        } else {
+          // Create new subscription
+          const { data: newSubscription, error: createError } = await supabase
+            .from('subscriptions')
+            .insert({
+              user_id: user.id,
+              service_name: invoice.service_name || 'שירות ללא שם',
+              vendor: invoice.sender,
+              cost: invoice.amount || 0,
+              currency: invoice.currency || 'ILS',
+              billing_cycle: invoice.billing_cycle || 'monthly',
+              start_date: invoice.billing_date || new Date().toISOString().split('T')[0],
+              next_renewal_date: invoice.billing_date || new Date().toISOString().split('T')[0],
+              status: 'active',
+            })
+            .select()
+            .single();
+
+          if (createError) throw createError;
+          subscriptionId = newSubscription.id;
+        }
+
+        // Update invoice with subscription_id and status
+        const { error: updateInvoiceError } = await supabase
+          .from('invoices')
+          .update({ 
+            status,
+            subscription_id: subscriptionId 
+          })
+          .eq('id', id);
+
+        if (updateInvoiceError) throw updateInvoiceError;
+      } else {
+        // Just update status
+        const { error } = await supabase
+          .from('invoices')
+          .update({ status })
+          .eq('id', id);
+
+        if (error) throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      toast.success("סטטוס החשבונית עודכן");
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      
+      if (variables.status === 'approved') {
+        toast.success("החשבונית אושרה והמנוי עודכן בהצלחה");
+      } else {
+        toast.success("סטטוס החשבונית עודכן");
+      }
     },
     onError: () => {
       toast.error("שגיאה בעדכון החשבונית");
