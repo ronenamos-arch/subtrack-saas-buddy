@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, CreditCard, TrendingUp, Bell, Mail, Shield, BarChart3, Zap } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, CreditCard, TrendingUp, Bell, Mail, Shield, BarChart3, Zap, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Landing = () => {
+  const [demoOpen, setDemoOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Hero Section */}
@@ -25,7 +29,13 @@ const Landing = () => {
               <Button size="lg" asChild className="bg-white text-primary hover:bg-white/90 shadow-lg">
                 <Link to="/auth">התחל ניסיון חינם</Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-white text-white hover:bg-white/10"
+                onClick={() => setDemoOpen(true)}
+              >
+                <Play className="h-5 w-5 ml-2" />
                 צפה בהדגמה
               </Button>
             </div>
@@ -249,6 +259,28 @@ const Landing = () => {
           </Button>
         </div>
       </section>
+
+      {/* Demo Video Dialog */}
+      <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
+        <DialogContent className="max-w-4xl w-full p-0" dir="rtl">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-2xl">סרטון הדגמה - SubTrack</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full pb-[56.25%] bg-muted rounded-b-lg overflow-hidden">
+            {/* Replace the src URL below with your actual demo video URL */}
+            <iframe
+              className="absolute top-0 left-0 w-full h-full"
+              src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+              title="SubTrack Demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+          <div className="p-6 pt-4 text-center text-sm text-muted-foreground">
+            <p>צפה כיצד SubTrack עוזר לך לנהל מנויים, להעלות חשבוניות ולעקוב אחר עלויות בקלות</p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <footer className="py-12 px-6 bg-muted/30">
