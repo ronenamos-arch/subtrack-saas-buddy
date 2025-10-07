@@ -64,17 +64,12 @@ export const useInvoices = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get signed URL for parsing (valid for 1 hour)
+      // Get signed URL for parsing (valid for 30 minutes - reduced from 1 hour for security)
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('invoices')
-        .createSignedUrl(fileName, 3600);
+        .createSignedUrl(fileName, 1800);
 
       if (signedUrlError) throw signedUrlError;
-
-      // Get public URL for storage
-      const { data: { publicUrl } } = supabase.storage
-        .from('invoices')
-        .getPublicUrl(fileName);
 
       // Parse invoice with AI using signed URL
       let parsedData: any = {};
@@ -95,12 +90,12 @@ export const useInvoices = () => {
         console.warn('parse-invoice threw, continuing without AI data', e);
       }
 
-      // Create invoice record
+      // Create invoice record (store file path only, not public URL for security)
       const { data: invoice, error: insertError } = await supabase
         .from('invoices')
         .insert({
           user_id: user.id,
-          pdf_url: publicUrl,
+          pdf_url: fileName, // Store path only for security
           sender: parsedData.sender,
           service_name: parsedData.service_name,
           amount: parsedData.amount,
@@ -122,7 +117,8 @@ export const useInvoices = () => {
       toast.success("החשבונית הועלתה בהצלחה");
     },
     onError: (error: any) => {
-      console.error("Error uploading invoice:", error);
+      // Log generic error without exposing details
+      console.error("Upload failed");
       toast.error("שגיאה בהעלאת החשבונית");
     },
   });

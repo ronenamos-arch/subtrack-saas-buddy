@@ -19,7 +19,7 @@ serve(async (req) => {
     // Input validation
     if (!fileUrl || typeof fileUrl !== 'string') {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid file URL provided' }),
+        JSON.stringify({ success: false, error: 'Invalid request' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -29,13 +29,13 @@ serve(async (req) => {
       const url = new URL(fileUrl);
       if (url.protocol !== 'https:') {
         return new Response(
-          JSON.stringify({ success: false, error: 'Only HTTPS URLs are allowed' }),
+          JSON.stringify({ success: false, error: 'Invalid request' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     } catch {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid URL format' }),
+        JSON.stringify({ success: false, error: 'Invalid request' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -43,16 +43,16 @@ serve(async (req) => {
     // Validate fileName (alphanumeric, dots, dashes, underscores only)
     if (fileName && !/^[\w.-]{1,255}$/.test(fileName)) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid file name format' }),
+        JSON.stringify({ success: false, error: 'Invalid request' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY not configured');
+      console.error('Service misconfigured');
       return new Response(
-        JSON.stringify({ success: false, error: 'Service configuration error' }),
+        JSON.stringify({ success: false, error: 'Service temporarily unavailable' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -63,9 +63,9 @@ serve(async (req) => {
     const fileResponse = await fetch(fileUrl);
     
     if (!fileResponse.ok) {
-      console.error('File download failed with status:', fileResponse.status);
+      console.error('File processing failed');
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to download file for processing' }),
+        JSON.stringify({ success: false, error: 'Unable to process file' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -74,7 +74,7 @@ serve(async (req) => {
     const contentLength = fileResponse.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
       return new Response(
-        JSON.stringify({ success: false, error: 'File size exceeds 10MB limit' }),
+        JSON.stringify({ success: false, error: 'File too large' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -170,10 +170,9 @@ serve(async (req) => {
     });
 
     if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
+      console.error('Processing failed');
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to process invoice with AI' }),
+        JSON.stringify({ success: false, error: 'Processing failed' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

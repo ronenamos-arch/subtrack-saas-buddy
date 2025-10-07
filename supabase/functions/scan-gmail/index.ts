@@ -20,7 +20,7 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
+        JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -30,7 +30,7 @@ serve(async (req) => {
     
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
+        JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -41,7 +41,7 @@ serve(async (req) => {
     // Validate daysBack parameter (1-730 days)
     if (typeof daysBack !== 'number' || daysBack < 1 || daysBack > 730) {
       return new Response(
-        JSON.stringify({ error: 'daysBack must be between 1 and 730 days' }),
+        JSON.stringify({ error: 'Invalid parameter' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -57,7 +57,7 @@ serve(async (req) => {
 
     if (tokenError || !tokenData) {
       return new Response(
-        JSON.stringify({ error: 'Gmail not connected' }),
+        JSON.stringify({ error: 'Service not configured' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -108,9 +108,9 @@ serve(async (req) => {
     );
 
     if (!searchResponse.ok) {
-      console.error('Gmail search failed:', searchResponse.status);
+      console.error('Search operation failed');
       return new Response(
-        JSON.stringify({ error: 'Failed to search emails' }),
+        JSON.stringify({ error: 'Search operation failed' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -212,12 +212,7 @@ serve(async (req) => {
 
             const parsed = parseData.data;
 
-            // Get public URL
-            const { data: { publicUrl } } = supabaseClient.storage
-              .from('invoices')
-              .getPublicUrl(fileName);
-
-            // Create invoice record with sanitized data
+            // Create invoice record with sanitized data (store path only for security)
             const { data: invoice } = await supabaseClient
               .from('invoices')
               .insert({
@@ -226,7 +221,7 @@ serve(async (req) => {
                 sender: from?.substring(0, 200),
                 subject: subject?.substring(0, 500),
                 received_date: date ? new Date(date).toISOString() : null,
-                pdf_url: publicUrl,
+                pdf_url: fileName, // Store path only for security
                 service_name: parsed.service_name?.substring(0, 200),
                 amount: parsed.amount,
                 currency: parsed.currency || 'ILS',
@@ -281,7 +276,7 @@ serve(async (req) => {
           }
         }
       } catch (error) {
-        console.error('Error processing message:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('Message processing failed');
       }
     }
 
@@ -295,9 +290,9 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
-    console.error('Error in scan-gmail:', error);
+    console.error('Scan operation failed');
     return new Response(
-      JSON.stringify({ error: 'An error occurred while scanning emails' }),
+      JSON.stringify({ error: 'Scan operation failed' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

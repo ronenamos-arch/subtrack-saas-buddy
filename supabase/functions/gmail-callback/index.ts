@@ -21,44 +21,44 @@ Deno.serve(async (req) => {
     console.log('OAuth callback received', { hasCode: !!code, hasState: !!state, error });
 
     if (error) {
-      console.error('OAuth error:', error);
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=oauth_error`);
+      console.error('OAuth callback error received');
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     // Validate authorization code
     if (!code || typeof code !== 'string') {
-      console.error('Invalid authorization code');
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=invalid_code`);
+      console.error('Invalid request');
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
     
     // Validate state parameter format (should be userId:csrfToken:timestamp)
     if (!state || typeof state !== 'string') {
-      console.error('Invalid state parameter');
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=invalid_state`);
+      console.error('Invalid request');
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     // Parse state token
     const stateParts = state.split(':');
     if (stateParts.length !== 3) {
-      console.error('Malformed state parameter');
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=invalid_state`);
+      console.error('Invalid request');
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     const [userId, csrfToken, timestampStr] = stateParts;
     const timestamp = parseInt(timestampStr, 10);
 
-    // Validate timestamp (reject if older than 10 minutes)
-    const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
-    if (isNaN(timestamp) || timestamp < tenMinutesAgo) {
-      console.error('Expired OAuth state');
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=expired_state`);
+    // Validate timestamp (reject if older than 5 minutes - reduced for security)
+    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+    if (isNaN(timestamp) || timestamp < fiveMinutesAgo) {
+      console.error('State validation failed');
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     // Validate UUID format for userId
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(userId)) {
-      console.error('Invalid user ID format');
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=invalid_state`);
+      console.error('Invalid request');
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     // Connect to Supabase to validate CSRF token
@@ -77,26 +77,26 @@ Deno.serve(async (req) => {
       .single();
 
     if (stateError || !pendingState) {
-      console.error('Invalid or already used OAuth state');
+      console.error('State validation failed');
       // Audit log failed validation
       await supabase.from('oauth_audit_log').insert({
         user_id: userId,
         event_type: 'oauth_csrf_validation_failed',
-        event_details: { state_provided: state, error: 'state_not_found_or_used' },
+        event_details: { error: 'validation_failed' },
       });
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=invalid_state`);
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     // Check if state is expired
     const stateExpiresAt = new Date(pendingState.expires_at);
     if (stateExpiresAt < new Date()) {
-      console.error('OAuth state expired');
+      console.error('State validation failed');
       await supabase.from('oauth_audit_log').insert({
         user_id: userId,
         event_type: 'oauth_state_expired',
-        event_details: { expires_at: pendingState.expires_at },
+        event_details: {},
       });
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=expired_state`);
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     // Mark state as used to prevent replay attacks
@@ -119,9 +119,8 @@ Deno.serve(async (req) => {
     });
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text();
-      console.error('Token exchange failed:', tokenResponse.status);
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=token_exchange_failed`);
+      console.error('Token exchange failed');
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     const tokens = await tokenResponse.json();
@@ -139,8 +138,8 @@ Deno.serve(async (req) => {
     });
 
     if (!profileResponse.ok) {
-      console.error('Failed to get Gmail profile');
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=profile_fetch_failed`);
+      console.error('Profile fetch failed');
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     const profile = await profileResponse.json();
@@ -158,13 +157,13 @@ Deno.serve(async (req) => {
       });
 
     if (dbError) {
-      console.error('Database error:', dbError.message);
+      console.error('Storage operation failed');
       await supabase.from('oauth_audit_log').insert({
         user_id: userId,
         event_type: 'oauth_token_storage_failed',
-        event_details: { error: dbError.message },
+        event_details: {},
       });
-      return Response.redirect(`${APP_URL}/integrations?status=error&message=storage_failed`);
+      return Response.redirect(`${APP_URL}/integrations?status=error`);
     }
 
     // Audit log successful Gmail connection
@@ -178,8 +177,8 @@ Deno.serve(async (req) => {
     return Response.redirect(`${APP_URL}/integrations?status=success`);
 
   } catch (error) {
-    console.error('Error in gmail-callback:', error instanceof Error ? error.message : error);
+    console.error('OAuth callback processing failed');
     const APP_URL = Deno.env.get('APP_URL') || 'https://preview--subtrack-saas-buddy.lovable.app';
-    return Response.redirect(`${APP_URL}/integrations?status=error&message=auth_failed`);
+    return Response.redirect(`${APP_URL}/integrations?status=error`);
   }
 });
