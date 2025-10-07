@@ -13,6 +13,7 @@ import { ManualInvoiceDialog } from "@/components/invoices/ManualInvoiceDialog";
 const Invoices = () => {
   const [loading, setLoading] = useState(true);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,7 +45,14 @@ const Invoices = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <ManualInvoiceDialog open={manualDialogOpen} onOpenChange={setManualDialogOpen} />
+            <ManualInvoiceDialog 
+              open={manualDialogOpen} 
+              onOpenChange={(open) => {
+                setManualDialogOpen(open);
+                if (!open) setEditingInvoiceId(null);
+              }}
+              invoiceId={editingInvoiceId}
+            />
             <Button
               variant="outline"
               onClick={() => navigate("/invoices/history")}
@@ -64,7 +72,10 @@ const Invoices = () => {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-1">
-            <InvoiceUpload onUploadSuccess={() => setManualDialogOpen(true)} />
+            <InvoiceUpload onUploadSuccess={(invoiceId) => {
+              setEditingInvoiceId(invoiceId);
+              setManualDialogOpen(true);
+            }} />
           </div>
           <div className="lg:col-span-2">
             <InvoiceList />

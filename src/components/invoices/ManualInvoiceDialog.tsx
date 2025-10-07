@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,10 @@ import { cn } from "@/lib/utils";
 interface ManualInvoiceDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  invoiceId?: string | null;
 }
 
-export const ManualInvoiceDialog = ({ open: controlledOpen, onOpenChange }: ManualInvoiceDialogProps = {}) => {
+export const ManualInvoiceDialog = ({ open: controlledOpen, onOpenChange, invoiceId }: ManualInvoiceDialogProps = {}) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
@@ -27,7 +28,7 @@ export const ManualInvoiceDialog = ({ open: controlledOpen, onOpenChange }: Manu
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [billingDate, setBillingDate] = useState<Date>();
   const [file, setFile] = useState<File | null>(null);
-  const { addManualInvoice } = useInvoices();
+  const { addManualInvoice, updateInvoice, invoices } = useInvoices();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -39,6 +40,30 @@ export const ManualInvoiceDialog = ({ open: controlledOpen, onOpenChange }: Manu
     setFile(null);
   };
 
+  // Load invoice data when invoiceId changes
+  useEffect(() => {
+    if (invoiceId && invoices) {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (invoice) {
+        setServiceName(invoice.service_name || "");
+        setSender(invoice.sender || "");
+        setAmount(invoice.amount?.toString() || "");
+        setCurrency(invoice.currency || "ILS");
+        setBillingCycle(invoice.billing_cycle || "monthly");
+        setBillingDate(invoice.billing_date ? new Date(invoice.billing_date) : undefined);
+      }
+    } else {
+      // Reset form when no invoice is being edited
+      setServiceName("");
+      setSender("");
+      setAmount("");
+      setCurrency("ILS");
+      setBillingCycle("monthly");
+      setBillingDate(undefined);
+      setFile(null);
+    }
+  }, [invoiceId, invoices]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -46,15 +71,31 @@ export const ManualInvoiceDialog = ({ open: controlledOpen, onOpenChange }: Manu
       return;
     }
 
-    await addManualInvoice.mutateAsync({
-      service_name: serviceName,
-      sender: sender || null,
-      amount: parseFloat(amount),
-      currency,
-      billing_cycle: billingCycle,
-      billing_date: format(billingDate, "yyyy-MM-dd"),
-      file: file || undefined,
-    });
+    if (invoiceId) {
+      // Update existing invoice
+      await updateInvoice.mutateAsync({
+        id: invoiceId,
+        data: {
+          service_name: serviceName,
+          sender: sender || null,
+          amount: parseFloat(amount),
+          currency,
+          billing_cycle: billingCycle,
+          billing_date: format(billingDate, "yyyy-MM-dd"),
+        }
+      });
+    } else {
+      // Create new invoice
+      await addManualInvoice.mutateAsync({
+        service_name: serviceName,
+        sender: sender || null,
+        amount: parseFloat(amount),
+        currency,
+        billing_cycle: billingCycle,
+        billing_date: format(billingDate, "yyyy-MM-dd"),
+        file: file || undefined,
+      });
+    }
 
     // Reset form
     setServiceName("");
@@ -205,8 +246,8 @@ export const ManualInvoiceDialog = ({ open: controlledOpen, onOpenChange }: Manu
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1" disabled={addManualInvoice.isPending}>
-              {addManualInvoice.isPending ? "שומר..." : "שמור"}
+            <Button type="submit" className="flex-1" disabled={addManualInvoice.isPending || updateInvoice.isPending}>
+              {(addManualInvoice.isPending || updateInvoice.isPending) ? "שומר..." : "שמור"}
             </Button>
             <Button
               type="button"

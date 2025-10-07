@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useInvoices } from "@/hooks/useInvoices";
 
 interface InvoiceUploadProps {
-  onUploadSuccess?: () => void;
+  onUploadSuccess?: (invoiceId: string) => void;
 }
 
 export const InvoiceUpload = ({ onUploadSuccess }: InvoiceUploadProps) => {
@@ -27,8 +27,8 @@ export const InvoiceUpload = ({ onUploadSuccess }: InvoiceUploadProps) => {
     }
 
     uploadInvoice.mutate(file, {
-      onSuccess: () => {
-        onUploadSuccess?.();
+      onSuccess: (invoice) => {
+        onUploadSuccess?.(invoice.id);
       }
     });
   };
