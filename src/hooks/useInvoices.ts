@@ -306,6 +306,32 @@ export const useInvoices = () => {
     },
   });
 
+  const updateInvoice = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Invoice> }) => {
+      const { error } = await supabase
+        .from('invoices')
+        .update({
+          service_name: data.service_name,
+          sender: data.sender,
+          amount: data.amount,
+          currency: data.currency,
+          billing_date: data.billing_date,
+          billing_cycle: data.billing_cycle,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("החשבונית עודכנה בהצלחה");
+    },
+    onError: () => {
+      toast.error("שגיאה בעדכון החשבונית");
+    },
+  });
+
   const deleteInvoice = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -330,6 +356,7 @@ export const useInvoices = () => {
     uploadInvoice,
     addManualInvoice,
     updateInvoiceStatus,
+    updateInvoice,
     deleteInvoice,
   };
 };

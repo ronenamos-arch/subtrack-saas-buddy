@@ -1,16 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Check, X, ExternalLink, Trash2, Eye } from "lucide-react";
-import { useInvoices } from "@/hooks/useInvoices";
+import { FileText, Check, X, ExternalLink, Trash2, Eye, Pencil } from "lucide-react";
+import { useInvoices, Invoice } from "@/hooks/useInvoices";
 import { format } from "date-fns";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/browserClient";
+import { EditInvoiceDialog } from "./EditInvoiceDialog";
 
 export const InvoiceList = () => {
-  const { invoices, isLoading, updateInvoiceStatus, deleteInvoice } = useInvoices();
+  const { invoices, isLoading, updateInvoiceStatus, updateInvoice, deleteInvoice } = useInvoices();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
   const getStoragePathFromUrl = (url: string) => {
     try {
@@ -47,6 +49,12 @@ export const InvoiceList = () => {
     if (!invoice.pdf_url) return;
     const signed = await getSignedUrl(invoice.pdf_url);
     window.open(signed, "_blank");
+  };
+
+  const handleEditSave = (data: Partial<Invoice>) => {
+    if (!editingInvoice) return;
+    updateInvoice.mutate({ id: editingInvoice.id, data });
+    setEditingInvoice(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -182,6 +190,15 @@ export const InvoiceList = () => {
                     )}
 
                     <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingInvoice(invoice)}
+                        className="flex-1"
+                      >
+                        <Pencil className="h-4 w-4 ml-2" />
+                        ערוך
+                      </Button>
                       {invoice.pdf_url && (
                         <Button
                           size="sm"
@@ -234,6 +251,14 @@ export const InvoiceList = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Invoice Dialog */}
+      <EditInvoiceDialog
+        invoice={editingInvoice}
+        open={editingInvoice !== null}
+        onOpenChange={(open) => !open && setEditingInvoice(null)}
+        onSave={handleEditSave}
+      />
     </>
   );
 };
