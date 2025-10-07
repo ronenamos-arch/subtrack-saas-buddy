@@ -77,16 +77,23 @@ export const useInvoices = () => {
         .getPublicUrl(fileName);
 
       // Parse invoice with AI using signed URL
-      const { data: parseData, error: parseError } = await supabase.functions.invoke(
-        'parse-invoice',
-        {
-          body: { fileUrl: signedUrlData.signedUrl, fileName: file.name }
+      let parsedData: any = {};
+      try {
+        const { data: parseData, error: parseError } = await supabase.functions.invoke(
+          'parse-invoice',
+          {
+            body: { fileUrl: signedUrlData.signedUrl, fileName: file.name }
+          }
+        );
+
+        if (parseError) {
+          console.warn('parse-invoice failed, continuing without AI data', parseError);
+        } else {
+          parsedData = parseData?.data || {};
         }
-      );
-
-      if (parseError) throw parseError;
-
-      const parsedData = parseData?.data || {};
+      } catch (e) {
+        console.warn('parse-invoice threw, continuing without AI data', e);
+      }
 
       // Create invoice record
       const { data: invoice, error: insertError } = await supabase
@@ -112,7 +119,7 @@ export const useInvoices = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      toast.success("החשבונית הועלתה ונותחה בהצלחה");
+      toast.success("החשבונית הועלתה בהצלחה");
     },
     onError: (error: any) => {
       console.error("Error uploading invoice:", error);

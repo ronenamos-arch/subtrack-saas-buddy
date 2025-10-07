@@ -38,7 +38,7 @@ export const InvoiceUpload = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="border-2 border-dashed rounded-lg p-8 text-center">
+          <div className="border-2 border-dashed rounded-lg p-4 text-center max-w-sm mx-auto">
             <input
               type="file"
               accept=".pdf,image/*"
@@ -48,8 +48,8 @@ export const InvoiceUpload = () => {
               disabled={uploadInvoice.isPending}
             />
             <label htmlFor="invoice-upload" className="cursor-pointer">
-              <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">
+              <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground mb-2">
                 לחץ להעלאה או גרור קובץ לכאן
               </p>
               <p className="text-xs text-muted-foreground">
@@ -60,7 +60,7 @@ export const InvoiceUpload = () => {
           <Button 
             onClick={() => document.getElementById('invoice-upload')?.click()}
             disabled={uploadInvoice.isPending}
-            className="w-full"
+            className="w-full h-9"
           >
             {uploadInvoice.isPending ? "מעלה..." : "בחר קובץ"}
           </Button>
