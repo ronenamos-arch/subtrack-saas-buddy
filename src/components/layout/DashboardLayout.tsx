@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import {
   LayoutDashboard,
   CreditCard,
@@ -11,6 +11,14 @@ import {
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +34,7 @@ import {
 } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/browserClient";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const menuItems = [
   { title: "דשבורד", url: "/dashboard", icon: LayoutDashboard },
@@ -33,23 +42,12 @@ const menuItems = [
   { title: "דוחות", url: "/reports", icon: BarChart3 },
   { title: "חשבוניות", url: "/invoices", icon: Mail },
   { title: "אינטגרציות", url: "/integrations", icon: Plug },
-  { title: "הגדרות", url: "/settings", icon: Settings },
 ];
 
 function AppSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "התנתקת בהצלחה",
-    });
-    navigate("/");
-  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -84,17 +82,6 @@ function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        <div className="mt-auto p-4">
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-4 w-4 ml-2" />
-            {!collapsed && <span>התנתק</span>}
-          </Button>
-        </div>
       </SidebarContent>
     </Sidebar>
   );
@@ -105,6 +92,50 @@ interface DashboardLayoutProps {
 }
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [userProfile, setUserProfile] = useState<{ full_name?: string; email?: string }>({});
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      setUserProfile({
+        full_name: profile?.full_name || "",
+        email: user.email,
+      });
+    };
+
+    loadUserProfile();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "התנתקת בהצלחה",
+    });
+    navigate("/");
+  };
+
+  const getInitials = () => {
+    if (userProfile.full_name) {
+      return userProfile.full_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return userProfile.email?.[0]?.toUpperCase() || "U";
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full relative" dir="rtl">
@@ -113,6 +144,44 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="sticky top-0 z-20 flex h-14 items-center gap-4 border-b bg-background px-6">
             <SidebarTrigger />
             <div className="flex-1" />
+            
+            {/* User Profile Menu */}
+            <DropdownMenu dir="rtl">
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium">
+                    {userProfile.full_name || userProfile.email}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuLabel className="text-right">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">
+                      {userProfile.full_name || "משתמש"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {userProfile.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="cursor-pointer flex items-center">
+                    <Settings className="ml-2 h-4 w-4" />
+                    <span>הגדרות</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                  <LogOut className="ml-2 h-4 w-4" />
+                  <span>התנתק</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div className="p-6">{children}</div>
         </main>
