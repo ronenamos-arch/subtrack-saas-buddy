@@ -58,9 +58,62 @@ export const useCategories = () => {
     },
   });
 
+  const updateCategory = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Category> & { id: string }) => {
+      const { data, error } = await supabase
+        .from("categories")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast({
+        title: "הקטגוריה עודכנה בהצלחה",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "שגיאה בעדכון קטגוריה",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCategory = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("categories")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast({
+        title: "הקטגוריה נמחקה בהצלחה",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "שגיאה במחיקת קטגוריה",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     categories: categories || [],
     isLoading,
     addCategory,
+    updateCategory,
+    deleteCategory,
   };
 };

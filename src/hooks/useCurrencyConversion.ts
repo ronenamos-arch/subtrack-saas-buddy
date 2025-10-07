@@ -8,6 +8,12 @@ const EXCHANGE_RATES: Record<string, Record<string, number>> = {
   EUR: { ILS: 4.0, USD: 1.09, EUR: 1 },
 };
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  ILS: "₪",
+  USD: "$",
+  EUR: "€",
+};
+
 export const useCurrencyConversion = () => {
   const { data: userCurrency } = useQuery({
     queryKey: ["userCurrency"],
@@ -67,9 +73,14 @@ export const useCurrencyConversion = () => {
     }).format(displayAmount);
   };
 
+  const getCurrencySymbol = (currency: string): string => {
+    return CURRENCY_SYMBOLS[currency] || currency;
+  };
+
   return {
     userCurrency: userCurrency || "ILS",
     convertCurrency,
     formatCurrency,
+    getCurrencySymbol,
   };
 };

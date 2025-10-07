@@ -2,12 +2,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Subscription } from "@/hooks/useSubscriptions";
 import { calculateMonthlyAmount } from "@/lib/subscriptionCalculations";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 
 interface CategoryBreakdownProps {
   subscriptions: Subscription[];
 }
 
 export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => {
+  const { convertCurrency, formatCurrency, userCurrency } = useCurrencyConversion();
+
   const generateCategoryData = () => {
     const categoryMap = new Map<string, { name: string; value: number; color: string }>();
 
@@ -17,14 +20,15 @@ export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => 
         const categoryName = sub.categories?.name || "ללא קטגוריה";
         const categoryColor = sub.categories?.color || "#94a3b8";
         const monthlyAmount = calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+        const convertedAmount = convertCurrency(monthlyAmount, sub.currency);
 
         if (categoryMap.has(categoryName)) {
           const existing = categoryMap.get(categoryName)!;
-          existing.value += monthlyAmount;
+          existing.value += convertedAmount;
         } else {
           categoryMap.set(categoryName, {
             name: categoryName,
-            value: monthlyAmount,
+            value: convertedAmount,
             color: categoryColor,
           });
         }
@@ -79,7 +83,7 @@ export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => 
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: any) => [`₪${value}`, "הוצאה חודשית"]}
+              formatter={(value: any) => [formatCurrency(value as number, userCurrency, { convert: false }), "הוצאה חודשית"]}
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",

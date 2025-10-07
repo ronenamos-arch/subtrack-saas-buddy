@@ -11,12 +11,15 @@ import {
 } from "recharts";
 import { Subscription } from "@/hooks/useSubscriptions";
 import { calculateMonthlyAmount } from "@/lib/subscriptionCalculations";
+import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 
 interface SpendingChartProps {
   subscriptions: Subscription[];
 }
 
 export const SpendingChart = ({ subscriptions }: SpendingChartProps) => {
+  const { convertCurrency, userCurrency, getCurrencySymbol } = useCurrencyConversion();
+
   // Generate data for last 12 months
   const generateChartData = () => {
     const months = [];
@@ -26,24 +29,26 @@ export const SpendingChart = ({ subscriptions }: SpendingChartProps) => {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const monthName = date.toLocaleDateString("he-IL", { month: "short" });
 
-      // Calculate spending for this month
+      // Calculate spending for this month with currency conversion
       const monthSpending = subscriptions
         .filter((sub) => {
           const startDate = new Date(sub.start_date);
           return startDate <= date && sub.status === "active";
         })
         .reduce((total, sub) => {
-          return total + calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+          const monthlyCost = calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+          return total + convertCurrency(monthlyCost, sub.currency);
         }, 0);
 
-      // Calculate potential savings (inactive subscriptions)
+      // Calculate potential savings (inactive subscriptions) with currency conversion
       const inactiveSpending = subscriptions
         .filter((sub) => {
           const startDate = new Date(sub.start_date);
           return startDate <= date && sub.status !== "active";
         })
         .reduce((total, sub) => {
-          return total + calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+          const monthlyCost = calculateMonthlyAmount(sub.cost, sub.billing_cycle);
+          return total + convertCurrency(monthlyCost, sub.currency);
         }, 0);
 
       months.push({
@@ -78,7 +83,7 @@ export const SpendingChart = ({ subscriptions }: SpendingChartProps) => {
               fontSize={12}
             />
             <Tooltip
-              formatter={(value: any) => [`₪${value}`]}
+              formatter={(value: any) => [`${getCurrencySymbol(userCurrency)}${Math.round(value as number)}`]}
               labelStyle={{ color: "hsl(var(--foreground))" }}
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",

@@ -10,6 +10,7 @@ import { SpendingChart } from "@/components/dashboard/SpendingChart";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
 import { UpcomingRenewals } from "@/components/dashboard/UpcomingRenewals";
 import { InsightsSection } from "@/components/dashboard/InsightsSection";
+import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import {
   getTotalMonthlySpend,
   getUpcomingRenewals,
@@ -20,6 +21,8 @@ import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
   const { subscriptions, isLoading } = useSubscriptions();
   const { formatCurrency, convertCurrency, userCurrency } = useCurrencyConversion();
 
@@ -44,8 +47,16 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const activeSubscriptions = subscriptions.filter((sub) => sub.status === "active");
-  const inactiveSubscriptions = subscriptions.filter((sub) => sub.status !== "active");
+  // Filter subscriptions based on category and year
+  const filteredSubscriptions = subscriptions.filter((sub) => {
+    const matchesCategory = selectedCategory === "all" || sub.category_id === selectedCategory;
+    const subYear = new Date(sub.start_date).getFullYear().toString();
+    const matchesYear = selectedYear === "all" || subYear === selectedYear;
+    return matchesCategory && matchesYear;
+  });
+
+  const activeSubscriptions = filteredSubscriptions.filter((sub) => sub.status === "active");
+  const inactiveSubscriptions = filteredSubscriptions.filter((sub) => sub.status !== "active");
   
   // Calculate with currency conversion
   const totalMonthlySpend = activeSubscriptions.reduce((total, sub) => {
@@ -53,7 +64,7 @@ const Dashboard = () => {
     return total + convertCurrency(monthlyCost, sub.currency);
   }, 0);
   
-  const upcomingRenewals = getUpcomingRenewals(subscriptions, 7);
+  const upcomingRenewals = getUpcomingRenewals(filteredSubscriptions, 7);
   
   const potentialSavings = inactiveSubscriptions.reduce((total, sub) => {
     const monthlyCost = calculateMonthlyAmount(sub.cost, sub.billing_cycle);
@@ -150,14 +161,21 @@ const Dashboard = () => {
           </Card>
         ) : (
           <>
+            <DashboardFilters
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
+            />
+
             <div className="grid gap-6 md:grid-cols-2">
-              <CategoryBreakdown subscriptions={subscriptions} />
-              <SpendingChart subscriptions={subscriptions} />
+              <CategoryBreakdown subscriptions={filteredSubscriptions} />
+              <SpendingChart subscriptions={filteredSubscriptions} />
             </div>
 
-            <InsightsSection subscriptions={subscriptions} />
+            <InsightsSection subscriptions={filteredSubscriptions} />
 
-            <UpcomingRenewals subscriptions={subscriptions} />
+            <UpcomingRenewals subscriptions={filteredSubscriptions} />
           </>
         )}
       </div>

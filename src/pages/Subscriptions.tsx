@@ -19,6 +19,7 @@ import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { AddSubscriptionDialog } from "@/components/subscriptions/AddSubscriptionDialog";
 import { DeleteConfirmDialog } from "@/components/subscriptions/DeleteConfirmDialog";
 import { SubscriptionFilters } from "@/components/subscriptions/SubscriptionFilters";
+import { CategoryManagementDialog } from "@/components/categories/CategoryManagementDialog";
 import { exportSubscriptionsToExcel } from "@/lib/exportToExcel";
 import {
   getBillingCycleLabel,
@@ -143,6 +144,7 @@ const Subscriptions = () => {
               <Download className="ml-2 h-4 w-4" />
               ייצוא לאקסל
             </Button>
+            <CategoryManagementDialog />
             <AddSubscriptionDialog />
           </div>
         </div>
