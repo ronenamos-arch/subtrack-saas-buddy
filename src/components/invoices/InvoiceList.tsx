@@ -6,10 +6,48 @@ import { useInvoices } from "@/hooks/useInvoices";
 import { format } from "date-fns";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/browserClient";
 
 export const InvoiceList = () => {
   const { invoices, isLoading, updateInvoiceStatus, deleteInvoice } = useInvoices();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const getStoragePathFromUrl = (url: string) => {
+    try {
+      const marker = "/invoices/";
+      const idx = url.indexOf(marker);
+      if (idx !== -1) return url.slice(idx + marker.length);
+      return url;
+    } catch {
+      return url;
+    }
+  };
+
+  const getSignedUrl = async (urlOrPath: string) => {
+    try {
+      const path = urlOrPath.startsWith("http") ? getStoragePathFromUrl(urlOrPath) : urlOrPath;
+      const { data, error } = await supabase.storage
+        .from("invoices")
+        .createSignedUrl(path, 600);
+      if (error) throw error;
+      return data.signedUrl;
+    } catch (e) {
+      console.error("Failed to create signed URL", e);
+      return urlOrPath;
+    }
+  };
+
+  const handlePreview = async (invoice: any) => {
+    if (!invoice.pdf_url) return;
+    const signed = await getSignedUrl(invoice.pdf_url);
+    setPreviewUrl(signed);
+  };
+
+  const handleOpenNew = async (invoice: any) => {
+    if (!invoice.pdf_url) return;
+    const signed = await getSignedUrl(invoice.pdf_url);
+    window.open(signed, "_blank");
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -51,7 +89,7 @@ export const InvoiceList = () => {
                     <div className="flex-shrink-0">
                       <div 
                         className="w-32 h-40 rounded-lg border-2 border-border overflow-hidden bg-muted flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => setPreviewUrl(invoice.pdf_url!)}
+                        onClick={() => handlePreview(invoice)}
                       >
                         {isPdf ? (
                           <div className="text-center p-4">

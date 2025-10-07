@@ -82,12 +82,20 @@ serve(async (req) => {
     const fileBuffer = await fileResponse.arrayBuffer();
     const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
     
-    // Determine mime type from file extension
-    const mimeType = fileName.toLowerCase().endsWith('.pdf') 
-      ? 'application/pdf' 
-      : 'image/jpeg';
+    // Determine mime type from response header or file extension
+    const headerType = fileResponse.headers.get('content-type')?.split(';')[0]?.toLowerCase();
+    let mimeType = headerType;
+    if (!mimeType) {
+      const lower = (fileName || '').toLowerCase();
+      if (lower.endsWith('.pdf')) mimeType = 'application/pdf';
+      else if (lower.endsWith('.png')) mimeType = 'image/png';
+      else if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) mimeType = 'image/jpeg';
+      else if (lower.endsWith('.webp')) mimeType = 'image/webp';
+      else if (lower.endsWith('.gif')) mimeType = 'image/gif';
+      else mimeType = 'application/octet-stream';
+    }
 
-    console.log('File size:', fileBuffer.byteLength, 'bytes');
+    console.log('File size:', fileBuffer.byteLength, 'bytes', 'MIME:', mimeType);
 
     // Use Lovable AI with Gemini Pro for better document understanding
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
