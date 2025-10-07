@@ -71,8 +71,26 @@ export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => 
               data={data}
               cx="50%"
               cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+              labelLine={true}
+              label={({ name, percent, cx, cy, midAngle, outerRadius }) => {
+                const RADIAN = Math.PI / 180;
+                const radius = outerRadius + 25;
+                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                
+                return (
+                  <text 
+                    x={x} 
+                    y={y} 
+                    fill="hsl(var(--foreground))"
+                    textAnchor={x > cx ? 'start' : 'end'} 
+                    dominantBaseline="central"
+                    className="text-sm font-medium"
+                  >
+                    {`${name} (${(percent * 100).toFixed(0)}%)`}
+                  </text>
+                );
+              }}
               outerRadius={100}
               innerRadius={60}
               fill="#8884d8"
