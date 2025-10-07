@@ -11,8 +11,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-export const ManualInvoiceDialog = () => {
-  const [open, setOpen] = useState(false);
+interface ManualInvoiceDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const ManualInvoiceDialog = ({ open: controlledOpen, onOpenChange }: ManualInvoiceDialogProps = {}) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [serviceName, setServiceName] = useState("");
   const [sender, setSender] = useState("");
   const [amount, setAmount] = useState("");

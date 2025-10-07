@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useInvoices } from "@/hooks/useInvoices";
 
-export const InvoiceUpload = () => {
+interface InvoiceUploadProps {
+  onUploadSuccess?: () => void;
+}
+
+export const InvoiceUpload = ({ onUploadSuccess }: InvoiceUploadProps) => {
   const { uploadInvoice } = useInvoices();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,7 +26,11 @@ export const InvoiceUpload = () => {
       return;
     }
 
-    uploadInvoice.mutate(file);
+    uploadInvoice.mutate(file, {
+      onSuccess: () => {
+        onUploadSuccess?.();
+      }
+    });
   };
 
   return (
