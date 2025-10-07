@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSubscriptions, Subscription } from "@/hooks/useSubscriptions";
 import { useCategories } from "@/hooks/useCategories";
 import { calculateNextRenewalDate } from "@/lib/subscriptionCalculations";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, Settings } from "lucide-react";
+import { CategoryManagementDialog } from "@/components/categories/CategoryManagementDialog";
 
 interface AddSubscriptionDialogProps {
   subscription?: Subscription;
@@ -95,9 +96,9 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
         )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "ערוך מנוי" : "הוסף מנוי חדש"}</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="text-right">
+          <DialogTitle className="text-right">{isEdit ? "ערוך מנוי" : "הוסף מנוי חדש"}</DialogTitle>
+          <DialogDescription className="text-right">
             {isEdit ? "עדכן את פרטי המנוי" : "הוסף מנוי חדש למערכת"}
           </DialogDescription>
         </DialogHeader>
@@ -213,7 +214,10 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category_id">קטגוריה</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="category_id">קטגוריה</Label>
+                <CategoryManagementDialog />
+              </div>
               <Select value={formData.category_id} onValueChange={(value) => setFormData({ ...formData, category_id: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="בחר קטגוריה" />
@@ -222,7 +226,13 @@ export const AddSubscriptionDialog = ({ subscription, trigger }: AddSubscription
                   <SelectItem value="none">ללא קטגוריה</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        {cat.name}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
