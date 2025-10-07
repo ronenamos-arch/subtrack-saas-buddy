@@ -7,13 +7,16 @@ import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useCategories } from "@/hooks/useCategories";
 import { calculateMonthlyAmount, getTotalMonthlySpend, getTotalYearlySpend } from "@/lib/subscriptionCalculations";
 import { useCurrencyConversion } from "@/hooks/useCurrencyConversion";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, ComposedChart } from "recharts";
 import { TrendingUp, DollarSign, Calendar, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 
 const Reports = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
   const { subscriptions, isLoading } = useSubscriptions();
   const { categories } = useCategories();
   const { formatCurrency, convertCurrency, userCurrency } = useCurrencyConversion();
@@ -30,7 +33,14 @@ const Reports = () => {
     checkAuth();
   }, [navigate]);
 
-  const activeSubscriptions = subscriptions.filter(sub => sub.status === "active");
+  // Filter subscriptions by category and year
+  const filteredSubscriptions = subscriptions.filter((sub) => {
+    const categoryMatch = selectedCategory === "all" || sub.category_id === selectedCategory;
+    const yearMatch = selectedYear === "all" || new Date(sub.start_date).getFullYear().toString() === selectedYear;
+    return categoryMatch && yearMatch;
+  });
+
+  const activeSubscriptions = filteredSubscriptions.filter(sub => sub.status === "active");
   
   // Calculate totals with currency conversion
   const monthlyTotal = activeSubscriptions.reduce((total, sub) => {
@@ -45,11 +55,29 @@ const Reports = () => {
     return total + convertCurrency(yearlyCost, sub.currency);
   }, 0);
 
-  // Group by billing cycle
+  // Group by billing cycle with amount and count
   const cycleData = [
-    { name: "חודשי", count: activeSubscriptions.filter(s => s.billing_cycle === "monthly").length },
-    { name: "רבעוני", count: activeSubscriptions.filter(s => s.billing_cycle === "quarterly").length },
-    { name: "שנתי", count: activeSubscriptions.filter(s => s.billing_cycle === "yearly").length },
+    { 
+      name: "חודשי", 
+      count: activeSubscriptions.filter(s => s.billing_cycle === "monthly").length,
+      amount: activeSubscriptions
+        .filter(s => s.billing_cycle === "monthly")
+        .reduce((sum, sub) => sum + convertCurrency(calculateMonthlyAmount(sub.cost, sub.billing_cycle), sub.currency), 0)
+    },
+    { 
+      name: "רבעוני", 
+      count: activeSubscriptions.filter(s => s.billing_cycle === "quarterly").length,
+      amount: activeSubscriptions
+        .filter(s => s.billing_cycle === "quarterly")
+        .reduce((sum, sub) => sum + convertCurrency(calculateMonthlyAmount(sub.cost, sub.billing_cycle), sub.currency), 0)
+    },
+    { 
+      name: "שנתי", 
+      count: activeSubscriptions.filter(s => s.billing_cycle === "yearly").length,
+      amount: activeSubscriptions
+        .filter(s => s.billing_cycle === "yearly")
+        .reduce((sum, sub) => sum + convertCurrency(calculateMonthlyAmount(sub.cost, sub.billing_cycle), sub.currency), 0)
+    },
   ].filter(d => d.count > 0);
 
   // Group by category with currency conversion
@@ -82,6 +110,14 @@ const Reports = () => {
           <h1 className="text-4xl font-bold">דוחות</h1>
           <p className="text-muted-foreground">ניתוח עלויות והתובנות על המנויים שלך</p>
         </div>
+
+        {/* Filters */}
+        <DashboardFilters
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          selectedYear={selectedYear}
+          onYearChange={setSelectedYear}
+        />
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-4">
@@ -135,13 +171,41 @@ const Reports = () => {
             <CardContent>
               {cycleData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={cycleData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" />
-                  </BarChart>
+                  <ComposedChart data={cycleData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" stroke="hsl(var(--foreground))" />
+                    <YAxis 
+                      yAxisId="left" 
+                      stroke="hsl(var(--primary))"
+                      label={{ value: 'סכום חודשי', angle: -90, position: 'insideLeft', fill: 'hsl(var(--foreground))' }}
+                    />
+                    <YAxis 
+                      yAxisId="right" 
+                      orientation="right"
+                      stroke="hsl(var(--chart-2))"
+                      label={{ value: 'מספר מנויים', angle: 90, position: 'insideRight', fill: 'hsl(var(--foreground))' }}
+                    />
+                    <Tooltip 
+                      formatter={(value: any, name: string) => {
+                        if (name === "amount") return [formatCurrency(value as number, userCurrency, { convert: false }), "סכום חודשי"];
+                        return [value, "מספר מנויים"];
+                      }}
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        color: "hsl(var(--primary))",
+                        fontWeight: "600",
+                      }}
+                      labelStyle={{
+                        color: "hsl(var(--primary))",
+                        fontWeight: "600",
+                      }}
+                    />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="amount" fill="hsl(var(--primary))" name="סכום חודשי" />
+                    <Bar yAxisId="right" dataKey="count" fill="hsl(var(--chart-2))" name="מספר מנויים" />
+                  </ComposedChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
