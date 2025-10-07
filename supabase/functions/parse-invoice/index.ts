@@ -97,14 +97,12 @@ serve(async (req) => {
 
     console.log('File size:', fileBuffer.byteLength, 'bytes', 'MIME:', mimeType);
 
-    // Temporary: skip AI for PDFs to avoid image extraction errors
-    if (mimeType === 'application/pdf') {
-      console.log('PDF detected, returning success with no parsed data');
-      return new Response(
-        JSON.stringify({ success: true, data: null }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Use Gemini 2.5 Pro for PDFs (supports PDF natively), Flash for images
+    const modelToUse = mimeType === 'application/pdf' 
+      ? 'google/gemini-2.5-pro' 
+      : 'google/gemini-2.5-flash';
+    
+    console.log(`Using model: ${modelToUse} for MIME type: ${mimeType}`);
 
     // Use Lovable AI with Gemini Pro for better document understanding
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -114,7 +112,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: modelToUse,
         messages: [
           {
             role: 'user',
