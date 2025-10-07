@@ -21,11 +21,16 @@ export const useCurrencyConversion = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return "ILS";
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("currency")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.warn("Error fetching user currency:", error);
+        return "ILS";
+      }
 
       return profile?.currency || "ILS";
     },
