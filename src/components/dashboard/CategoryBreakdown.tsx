@@ -103,14 +103,14 @@ export const CategoryBreakdown = ({ subscriptions }: CategoryBreakdownProps) => 
             <Tooltip
               formatter={(value: any) => [formatCurrency(value as number, userCurrency, { convert: false }), "הוצאה חודשית"]}
               contentStyle={{
-                backgroundColor: "hsl(var(--card))",
+                backgroundColor: "white",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "8px",
-                color: "white",
+                color: "hsl(var(--primary))",
                 fontWeight: "600",
               }}
               labelStyle={{
-                color: "white",
+                color: "hsl(var(--primary))",
                 fontWeight: "600",
               }}
             />
