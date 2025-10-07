@@ -138,7 +138,7 @@ const Landing = () => {
                 <ul className="space-y-3">
                   <li className="flex items-center gap-2">
                     <Check className="w-5 h-5 text-success" />
-                    <span>עד 5 מנויים</span>
+                    <span>עד 20 יוזרים</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-5 h-5 text-success" />
@@ -162,7 +162,7 @@ const Landing = () => {
               <CardHeader>
                 <CardTitle className="text-2xl">Pro</CardTitle>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold">₪49</span>
+                  <span className="text-4xl font-bold">₪25</span>
                   <span className="text-muted-foreground">/חודש</span>
                 </div>
               </CardHeader>
