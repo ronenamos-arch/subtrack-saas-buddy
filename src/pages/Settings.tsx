@@ -39,7 +39,7 @@ const Settings = () => {
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error loading profile:", error);
@@ -68,15 +68,18 @@ const Settings = () => {
 
     const { error } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id: session.user.id,
         full_name: profile.full_name,
         organization_name: profile.organization_name,
         currency: profile.currency,
         notification_days: profile.notification_days,
-      })
-      .eq("id", session.user.id);
+      }, {
+        onConflict: 'id'
+      });
 
     if (error) {
+      console.error("Save error:", error);
       toast({
         title: "שגיאה",
         description: "לא ניתן לשמור את ההגדרות",
