@@ -124,6 +124,16 @@ const Integrations = () => {
           <p className="text-muted-foreground">חבר את מערכת המנויים שלך לשירותים אחרים</p>
         </div>
 
+        {/* Coming Soon Banner */}
+        <Card className="p-6 bg-primary/10 border-primary/20">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-primary mb-2">בקרוב</h2>
+            <p className="text-muted-foreground">
+              רוב האינטגרציות עדיין בפיתוח ויהיו זמינות בקרוב
+            </p>
+          </div>
+        </Card>
+
         {/* Gmail Integration Status */}
         {!isCheckingStatus && gmailStatus?.connected && (
           <Card className="p-6">
