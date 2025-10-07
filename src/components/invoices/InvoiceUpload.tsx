@@ -26,7 +26,7 @@ export const InvoiceUpload = () => {
   };
 
   return (
-    <Card>
+    <Card className="max-w-sm w-full mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
@@ -38,7 +38,7 @@ export const InvoiceUpload = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="border-2 border-dashed rounded-lg p-4 text-center max-w-sm mx-auto">
+          <div className="border-2 border-dashed rounded-lg p-4 text-center max-w-xs mx-auto">
             <input
               type="file"
               accept=".pdf,image/*"
