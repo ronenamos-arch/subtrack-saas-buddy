@@ -6,12 +6,20 @@ const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefine
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || (PROJECT_ID ? `https://${PROJECT_ID}.supabase.co` : undefined);
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
-if (!SUPABASE_URL) {
+// Debug logging
+console.log('[Supabase] Environment check:', {
+  hasProjectId: !!PROJECT_ID,
+  hasUrl: !!SUPABASE_URL,
+  hasKey: !!SUPABASE_PUBLISHABLE_KEY,
+  url: SUPABASE_URL,
+});
+
+if (!SUPABASE_URL || SUPABASE_URL === 'undefined') {
   console.error('[Supabase] Missing URL. Set VITE_SUPABASE_URL or VITE_SUPABASE_PROJECT_ID.');
   throw new Error('Supabase URL is missing.');
 }
 
-if (!SUPABASE_PUBLISHABLE_KEY) {
+if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY === 'undefined') {
   console.error('[Supabase] Missing publishable key. Set VITE_SUPABASE_PUBLISHABLE_KEY.');
   throw new Error('Supabase publishable key is missing.');
 }
