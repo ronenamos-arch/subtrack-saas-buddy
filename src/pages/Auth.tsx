@@ -20,17 +20,48 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
+      try {
+        console.log('[Auth] Checking session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('[Auth] Session error:', error);
+          // Clear the URL hash if there's an error
+          if (window.location.hash) {
+            console.log('[Auth] Clearing hash from URL');
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+          return;
+        }
+
+        console.log('[Auth] Session check result:', { hasSession: !!session });
+
+        if (session) {
+          console.log('[Auth] Session found, redirecting to dashboard');
+          navigate("/dashboard");
+        }
+      } catch (err) {
+        console.error('[Auth] Exception during session check:', err);
+        // Clear the URL hash on error
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
       }
     };
+
     checkUser();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Auth] Auth state changed:', event, { hasSession: !!session });
+
       if (event === 'SIGNED_IN' && session) {
+        console.log('[Auth] Sign in detected, redirecting to dashboard');
         navigate("/dashboard");
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('[Auth] Token refreshed');
       }
     });
 
